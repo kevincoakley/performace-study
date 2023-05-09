@@ -4,14 +4,14 @@ num_classes = None
 image_shape = None
 
 
-def cifar_preprocessing(image, label):
+def preprocessing(image, label):
     image = tf.cast(image, tf.float32)
     image = tf.image.per_image_standardization(image)
     image = tf.image.resize(image, image_shape[:2])
     return image, tf.squeeze(tf.one_hot(label, depth=num_classes))
 
 
-def cifar_augmentation(image, label):
+def augmentation(image, label):
     image = tf.image.resize_with_crop_or_pad(
         image, image_shape[0] + 15, image_shape[1] + 15
     )
@@ -20,19 +20,19 @@ def cifar_augmentation(image, label):
     return image, label
 
 
-def get_cifar_input(X_train, y_train, X_val, y_val, batch_size, shuffle_seed):
+def get_input(X_train, y_train, X_val, y_val, batch_size, shuffle_seed):
     train_dataset = (
         tf.data.Dataset.from_tensor_slices((X_train, y_train))
-        .map(cifar_preprocessing)
+        .map(preprocessing)
         .repeat()
-        .map(cifar_augmentation)
+        .map(augmentation)
         .shuffle(10000, seed=shuffle_seed)
         .batch(batch_size)
         .prefetch(tf.data.experimental.AUTOTUNE)
     )
     val_dataset = (
         tf.data.Dataset.from_tensor_slices((X_val, y_val))
-        .map(cifar_preprocessing)
+        .map(preprocessing)
         .batch(200)
         .prefetch(tf.data.experimental.AUTOTUNE)
     )
@@ -47,8 +47,14 @@ def get_dataset(dataset_name, batch_size, shuffle_seed, shape=[32, 32, 3]):
     if dataset_name == "cifar10":
         num_classes = 10
         (X_train, y_train), (X_val, y_val) = tf.keras.datasets.cifar10.load_data()
-        return get_cifar_input(X_train, y_train, X_val, y_val, batch_size, shuffle_seed)
+        return get_input(X_train, y_train, X_val, y_val, batch_size, shuffle_seed)
     elif dataset_name == "cifar100":
         num_classes = 100
         (X_train, y_train), (X_val, y_val) = tf.keras.datasets.cifar100.load_data()
-        return get_cifar_input(X_train, y_train, X_val, y_val, batch_size, shuffle_seed)
+        return get_input(X_train, y_train, X_val, y_val, batch_size, shuffle_seed)
+    elif dataset_name == "fashion_mnist":
+        num_classes = 10
+        (X_train, y_train), (X_val, y_val) = tf.keras.datasets.fashion_mnist.load_data()
+        X_train = X_train.reshape((X_train.shape[0], 28, 28, 1))
+        X_val = X_val.reshape((X_val.shape[0], 28, 28, 1))
+        return get_input(X_train, y_train, X_val, y_val, batch_size, shuffle_seed)

@@ -4,7 +4,7 @@ import numpy as np
 from datetime import datetime
 import dataset_preprocess
 
-script_version = "1.0.0"
+script_version = "1.0.1"
 
 epochs = 50
 batch_size = 128
@@ -49,14 +49,16 @@ def image_classification(
     """
     datasets = {
         "cifar100": {
-            "data": tf.keras.datasets.cifar100,
             "num_class": 100,
             "input_shape": (128, 128, 3),
         },
         "cifar10": {
-            "data": tf.keras.datasets.cifar10,
             "num_class": 10,
             "input_shape": (128, 128, 3),
+        },
+        "fashion_mnist": {
+            "num_class": 10,
+            "input_shape": (128, 128, 1),
         },
     }
 
@@ -97,8 +99,28 @@ def image_classification(
                 "classifier_activation": "softmax",
             },
         },
-        "ResNet": {
+        "ResNet50V2": {
             "application": tf.keras.applications.resnet_v2.ResNet50V2,
+            "args": {
+                "include_top": True,
+                "weights": None,
+                "input_shape": input_shape,
+                "classes": num_class,
+                "classifier_activation": "softmax",
+            },
+        },
+        "ResNet101V2": {
+            "application": tf.keras.applications.resnet_v2.ResNet101V2,
+            "args": {
+                "include_top": True,
+                "weights": None,
+                "input_shape": input_shape,
+                "classes": num_class,
+                "classifier_activation": "softmax",
+            },
+        },
+        "ResNet152V2": {
+            "application": tf.keras.applications.resnet_v2.ResNet152V2,
             "args": {
                 "include_top": True,
                 "weights": None,
@@ -146,7 +168,7 @@ def image_classification(
     """
 
     def lr_scheduler(epoch):
-        new_lr = learning_rate * (0.1 ** (epoch // 45))
+        new_lr = learning_rate * (0.1 ** (epoch // (45 - 1)))
         return new_lr
 
     reduce_lr = tf.keras.callbacks.LearningRateScheduler(lr_scheduler)
@@ -327,7 +349,7 @@ def parse_arguments(args):
     parser.add_argument(
         "--model-name",
         dest="model_name",
-        help="EfficientNet, Xception, InceptionV3, ResNet or DenseNet",
+        help="EfficientNet, Xception, InceptionV3, ResNet50V2, ResNet101V2, ResNet152V2 or DenseNet",
         default="DenseNet",
     )
 

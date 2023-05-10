@@ -4,7 +4,7 @@ import numpy as np
 from datetime import datetime
 import dataset_preprocess
 
-script_version = "1.0.1"
+script_version = "1.0.2"
 
 epochs = 50
 batch_size = 128
@@ -220,9 +220,20 @@ def image_classification(
     ## Save the model
     """
     if save_model:
-        y_predicted = model.predict(val_dataset)
-        np.save(base_name + "_predict_" + str(run_number) + ".npy", y_predicted)
-        model.save(base_name + "_model_" + str(run_number) + ".h5")
+        if os.path.exists("models/") == False:
+            os.mkdir("models/")
+        
+        model_path = "models/" 
+        
+        if run_name != "":
+            if os.path.exists("models/") == False:
+                os.mkdir("models/" + run_name + "/")
+            model_path = "models/" + run_name + "/"
+        
+        if deterministic or seed_val != 1:
+            model_path = model_path + base_name + "_seed_" + str(seed_val) + ".h5"
+        
+        model.save(model_path)
 
     return score[0], score[1], epochs, training_time
 

@@ -4,9 +4,8 @@ import numpy as np
 from datetime import datetime
 import dataset_preprocess
 
-script_version = "1.0.2"
+script_version = "1.0.3"
 
-epochs = 50
 batch_size = 128
 learning_rate = 4e-4
 steps_per_epoch = math.ceil(50000 / batch_size)
@@ -17,6 +16,8 @@ def image_classification(
     model_name="Densenet",
     dataset_name="cifar10",
     deterministic=False,
+    epochs=50,
+    lr_decay=45,
     seed_val=1,
     run_name="",
     save_model=False,
@@ -168,7 +169,7 @@ def image_classification(
     """
 
     def lr_scheduler(epoch):
-        new_lr = learning_rate * (0.1 ** (epoch // (45 - 1)))
+        new_lr = learning_rate * (0.1 ** (epoch // (lr_decay - 1)))
         return new_lr
 
     reduce_lr = tf.keras.callbacks.LearningRateScheduler(lr_scheduler)
@@ -222,17 +223,17 @@ def image_classification(
     if save_model:
         if os.path.exists("models/") == False:
             os.mkdir("models/")
-        
-        model_path = "models/" 
-        
+
+        model_path = "models/"
+
         if run_name != "":
             if os.path.exists("models/") == False:
                 os.mkdir("models/" + run_name + "/")
             model_path = "models/" + run_name + "/"
-        
+
         if deterministic or seed_val != 1:
             model_path = model_path + base_name + "_seed_" + str(seed_val) + ".h5"
-        
+
         model.save(model_path)
 
     return score[0], score[1], epochs, training_time
@@ -347,6 +348,22 @@ def parse_arguments(args):
     )
 
     parser.add_argument(
+        "--epochs",
+        dest="epochs",
+        help="Number of epochs",
+        type=int,
+        default=50,
+    )
+
+    parser.add_argument(
+        "--lr-decay",
+        dest="lr_decay",
+        help="Number learning rate decay epochs",
+        type=int,
+        default=45,
+    )
+
+    parser.add_argument(
         "--run-name",
         dest="run_name",
         help="Name of training run",
@@ -393,6 +410,8 @@ if __name__ == "__main__":
             model_name=args.model_name,
             dataset_name=args.dataset_name,
             deterministic=args.deterministic,
+            epochs=args.epochs,
+            lr_decay=args.lr_decay,
             seed_val=seed_val,
             run_name=args.run_name,
             save_model=args.save_model,

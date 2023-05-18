@@ -4,11 +4,7 @@ import numpy as np
 from datetime import datetime
 import dataset_preprocess
 
-script_version = "1.0.3"
-
-batch_size = 128
-learning_rate = 4e-4
-steps_per_epoch = math.ceil(50000 / batch_size)
+script_version = "1.0.4"
 
 
 def image_classification(
@@ -17,6 +13,8 @@ def image_classification(
     dataset_name="cifar10",
     deterministic=False,
     epochs=50,
+    steps_per_epoch=392,
+    learning_rate=4e-4,
     lr_decay=45,
     seed_val=1,
     run_name="",
@@ -52,19 +50,28 @@ def image_classification(
         "cifar100": {
             "num_class": 100,
             "input_shape": (128, 128, 3),
+            "batch_size": 128,
         },
         "cifar10": {
             "num_class": 10,
             "input_shape": (128, 128, 3),
+            "batch_size": 128,
         },
         "fashion_mnist": {
             "num_class": 10,
             "input_shape": (128, 128, 1),
+            "batch_size": 128,
+        },
+        "cats_vs_dogs": {
+            "num_class": 2,
+            "input_shape": (128, 128, 3),
+            "batch_size": 128,
         },
     }
 
     input_shape = datasets[dataset_name]["input_shape"]
     num_class = datasets[dataset_name]["num_class"]
+    batch_size = datasets[dataset_name]["batch_size"]
 
     """
     ## Models definition dictionary
@@ -130,7 +137,27 @@ def image_classification(
                 "classifier_activation": "softmax",
             },
         },
-        "DenseNet": {
+        "DenseNet121": {
+            "application": tf.keras.applications.DenseNet121,
+            "args": {
+                "include_top": True,
+                "weights": None,
+                "input_shape": input_shape,
+                "classes": num_class,
+                "classifier_activation": "softmax",
+            },
+        },
+        "DenseNet169": {
+            "application": tf.keras.applications.DenseNet169,
+            "args": {
+                "include_top": True,
+                "weights": None,
+                "input_shape": input_shape,
+                "classes": num_class,
+                "classifier_activation": "softmax",
+            },
+        },
+        "DenseNet201": {
             "application": tf.keras.applications.DenseNet201,
             "args": {
                 "include_top": True,
@@ -236,7 +263,7 @@ def image_classification(
 
         model.save(model_path)
 
-    return score[0], score[1], epochs, training_time
+    return score[0], score[1], training_time
 
 
 def get_system_info():
@@ -259,6 +286,9 @@ def save_score(
     test_loss,
     test_accuracy,
     epochs,
+    steps_per_epoch,
+    learning_rate,
+    lr_decay,
     training_time,
     model_name,
     dataset_name,
@@ -287,6 +317,9 @@ def save_score(
             "tensorflow_version",
             "tensorflow_compiler_version",
             "epochs",
+            "steps_per_epoch",
+            "learning_rate",
+            "lr_decay",
             "model_name",
             "dataset_name",
             "random_seed",
@@ -309,6 +342,9 @@ def save_score(
                 "tensorflow_version": tf.version.VERSION,
                 "tensorflow_compiler_version": tf.version.COMPILER_VERSION,
                 "epochs": epochs,
+                "steps_per_epoch": steps_per_epoch,
+                "learning_rate": learning_rate,
+                "lr_decay": lr_decay,
                 "model_name": model_name,
                 "dataset_name": dataset_name,
                 "random_seed": seed_val,
@@ -356,6 +392,22 @@ def parse_arguments(args):
     )
 
     parser.add_argument(
+        "--steps-per-epoch",
+        dest="steps_per_epoch",
+        help="Total number of batches of samples per epoch",
+        type=int,
+        default=392,
+    )
+
+    parser.add_argument(
+        "--learning-rate",
+        dest="learning_rate",
+        help="Set the learning rate",
+        type=float,
+        default=4e-4,
+    )
+
+    parser.add_argument(
         "--lr-decay",
         dest="lr_decay",
         help="Number learning rate decay epochs",
@@ -377,7 +429,7 @@ def parse_arguments(args):
     parser.add_argument(
         "--model-name",
         dest="model_name",
-        help="EfficientNet, Xception, InceptionV3, ResNet50V2, ResNet101V2, ResNet152V2 or DenseNet",
+        help="Name of model to train",
         default="DenseNet",
     )
 
@@ -405,22 +457,27 @@ if __name__ == "__main__":
             "\nImage Classification (%s - %s): %s of %s [%s]\n======================\n"
             % (args.model_name, args.dataset_name, str(x + 1), args.num_runs, seed_val)
         )
-        test_loss, test_accuracy, epochs, training_time = image_classification(
+        test_loss, test_accuracy, training_time = image_classification(
             x + 1,
             model_name=args.model_name,
             dataset_name=args.dataset_name,
             deterministic=args.deterministic,
             epochs=args.epochs,
+            steps_per_epoch=args.steps_per_epoch,
+            learning_rate=args.learning_rate,
             lr_decay=args.lr_decay,
             seed_val=seed_val,
             run_name=args.run_name,
             save_model=args.save_model,
         )
         save_score(
-            test_loss,
-            test_accuracy,
-            epochs,
-            training_time,
+            test_loss=test_loss,
+            test_accuracy=test_accuracy,
+            epochs=args.epochs,
+            steps_per_epoch=args.steps_per_epoch,
+            learning_rate=args.learning_rate,
+            lr_decay=args.lr_decay,
+            training_time=training_time,
             model_name=args.model_name,
             dataset_name=args.dataset_name,
             deterministic=args.deterministic,

@@ -4,7 +4,7 @@ import numpy as np
 from datetime import datetime
 import dataset_preprocess
 
-script_version = "1.0.4"
+script_version = "1.0.5"
 
 
 def image_classification(
@@ -19,6 +19,7 @@ def image_classification(
     seed_val=1,
     run_name="",
     save_model=False,
+    save_predictions=False,
 ):
     if deterministic or seed_val != 1:
         """
@@ -245,6 +246,40 @@ def image_classification(
     print("Training time: ", training_time)
 
     """
+    ## Get and save the predictions
+    """
+    if save_predictions:
+        # Get the predictions
+        predictions = model.predict(val_dataset)
+
+        # Get the labels of the validation dataset
+        val_dataset = val_dataset.unbatch()
+        labels = np.asarray(list(val_dataset.map(lambda x, y: y)))
+
+        # Get the index to the highest probability
+        y_true = np.argmax(labels, axis=1)
+        y_pred = np.argmax(predictions, axis=1)
+
+        predictions_csv_file = base_name + "_predictions_seed_" + str(seed_val) + ".csv"
+
+        # Add the true values to the first column and the predicted values to the second column
+        true_and_pred = np.vstack((y_true, y_pred)).T
+
+        # Add each label predictions to the true and predicted values
+        csv_output_array = np.concatenate((true_and_pred, predictions), axis=1)
+
+        # Save the predictions to a csv file
+        with open(predictions_csv_file, "w") as csvfile:
+            writer = csv.writer(csvfile)
+
+            csv_columns = ["true_value", "predicted_value"]
+            for i in range(predictions.shape[1]):
+                csv_columns.append("label_" + str(i))
+
+            writer.writerow(csv_columns)
+            writer.writerows(csv_output_array.tolist())
+
+    """
     ## Save the model
     """
     if save_model:
@@ -427,10 +462,29 @@ def parse_arguments(args):
     )
 
     parser.add_argument(
+        "--save-predictions",
+        dest="save_predictions",
+        help="Save the predictions",
+        action="store_true",
+    )
+
+    parser.add_argument(
         "--model-name",
         dest="model_name",
         help="Name of model to train",
         default="DenseNet",
+        choices=[
+            "EfficientNet",
+            "Xception",
+            "InceptionV3",
+            "ResNet50V2",
+            "ResNet101V2",
+            "ResNet152V2",
+            "DenseNet121",
+            "DenseNet169",
+            "DenseNet201",
+        ],
+        required=True,
     )
 
     parser.add_argument(
@@ -438,6 +492,8 @@ def parse_arguments(args):
         dest="dataset_name",
         help="cifar10, cifar100, fashion_mnist",
         default="cifar10",
+        choices=["cifar10", "cifar100", "fashion_mnist", "cats_vs_dogs"],
+        required=True,
     )
 
     return parser.parse_args(args)
@@ -469,6 +525,7 @@ if __name__ == "__main__":
             seed_val=seed_val,
             run_name=args.run_name,
             save_model=args.save_model,
+            save_predictions=args.save_predictions,
         )
         save_score(
             test_loss=test_loss,

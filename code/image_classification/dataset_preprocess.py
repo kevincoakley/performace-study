@@ -25,7 +25,6 @@ def get_input_keras(X_train, y_train, X_val, y_val, batch_size, shuffle_seed):
     train_dataset = (
         tf.data.Dataset.from_tensor_slices((X_train, y_train))
         .map(preprocessing)
-        .cache()
         .repeat()
         .map(augmentation)
         .shuffle(10000, seed=shuffle_seed)
@@ -35,7 +34,6 @@ def get_input_keras(X_train, y_train, X_val, y_val, batch_size, shuffle_seed):
     val_dataset = (
         tf.data.Dataset.from_tensor_slices((X_val, y_val))
         .map(preprocessing)
-        .cache()
         .batch(batch_size)
         .prefetch(tf.data.AUTOTUNE)
     )
@@ -45,7 +43,6 @@ def get_input_keras(X_train, y_train, X_val, y_val, batch_size, shuffle_seed):
 def get_input_tfds(train, val, batch_size, shuffle_seed):
     train_dataset = (
         train.map(preprocessing)
-        .cache()
         .repeat()
         .map(augmentation)
         .shuffle(10000, seed=shuffle_seed)
@@ -54,7 +51,6 @@ def get_input_tfds(train, val, batch_size, shuffle_seed):
     )
     val_dataset = (
         val.map(preprocessing)
-        .cache()
         .batch(batch_size)
         .prefetch(tf.data.AUTOTUNE)
     )

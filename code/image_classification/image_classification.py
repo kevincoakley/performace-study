@@ -4,7 +4,7 @@ import numpy as np
 from datetime import datetime
 import dataset_preprocess
 
-script_version = "1.0.5"
+script_version = "1.0.6"
 
 
 def image_classification(
@@ -13,7 +13,6 @@ def image_classification(
     dataset_name="cifar10",
     deterministic=False,
     epochs=50,
-    steps_per_epoch=392,
     learning_rate=4e-4,
     lr_decay=45,
     seed_val=1,
@@ -173,9 +172,14 @@ def image_classification(
     """
     ## Load the dataset
     """
-    train_dataset, val_dataset = dataset_preprocess.get_dataset(
+    train_dataset, val_dataset, train_size, val_size = dataset_preprocess.get_dataset(
         dataset_name, batch_size, shuffle_seed=42, shape=input_shape
     )
+
+    # Calculate the number of training and validation steps to
+    # iterate over the entire dataset using the defined batch size.
+    train_steps_per_epoch = train_size // batch_size
+    val_steps_per_epoch = val_size // batch_size
 
     """
     ## Create the model
@@ -227,7 +231,7 @@ def image_classification(
     model.fit(
         train_dataset,
         epochs=epochs,
-        steps_per_epoch=steps_per_epoch,
+        steps_per_epoch=train_steps_per_epoch,
         validation_data=val_dataset,
         callbacks=callbacks,
     )
@@ -239,7 +243,7 @@ def image_classification(
     """
     ## Evaluate the trained model
     """
-    score = model.evaluate(val_dataset, steps=steps_per_epoch, verbose=0)
+    score = model.evaluate(val_dataset, steps=val_steps_per_epoch, verbose=0)
 
     print("Test loss: ", score[0])
     print("Test accuracy: ", score[1])
@@ -321,7 +325,6 @@ def save_score(
     test_loss,
     test_accuracy,
     epochs,
-    steps_per_epoch,
     learning_rate,
     lr_decay,
     training_time,
@@ -352,7 +355,6 @@ def save_score(
             "tensorflow_version",
             "tensorflow_compiler_version",
             "epochs",
-            "steps_per_epoch",
             "learning_rate",
             "lr_decay",
             "model_name",
@@ -377,7 +379,6 @@ def save_score(
                 "tensorflow_version": tf.version.VERSION,
                 "tensorflow_compiler_version": tf.version.COMPILER_VERSION,
                 "epochs": epochs,
-                "steps_per_epoch": steps_per_epoch,
                 "learning_rate": learning_rate,
                 "lr_decay": lr_decay,
                 "model_name": model_name,
@@ -424,14 +425,6 @@ def parse_arguments(args):
         help="Number of epochs",
         type=int,
         default=50,
-    )
-
-    parser.add_argument(
-        "--steps-per-epoch",
-        dest="steps_per_epoch",
-        help="Total number of batches of samples per epoch",
-        type=int,
-        default=392,
     )
 
     parser.add_argument(
@@ -519,7 +512,6 @@ if __name__ == "__main__":
             dataset_name=args.dataset_name,
             deterministic=args.deterministic,
             epochs=args.epochs,
-            steps_per_epoch=args.steps_per_epoch,
             learning_rate=args.learning_rate,
             lr_decay=args.lr_decay,
             seed_val=seed_val,
@@ -531,7 +523,6 @@ if __name__ == "__main__":
             test_loss=test_loss,
             test_accuracy=test_accuracy,
             epochs=args.epochs,
-            steps_per_epoch=args.steps_per_epoch,
             learning_rate=args.learning_rate,
             lr_decay=args.lr_decay,
             training_time=training_time,

@@ -55,7 +55,7 @@ new_model = tf.keras.models.load_model(model_path)
 new_model.summary()
 
 # Read the dataset
-train_dataset, val_dataset = dataset_preprocess.get_dataset(
+train_dataset, val_dataset, train_size, val_size = dataset_preprocess.get_dataset(
     dataset, batch_size, shuffle_seed=42, shape=(128, 128, 3)
 )
 

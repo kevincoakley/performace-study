@@ -37,7 +37,7 @@ def get_input_keras(X_train, y_train, X_val, y_val, batch_size, shuffle_seed):
         .batch(batch_size)
         .prefetch(tf.data.AUTOTUNE)
     )
-    return train_dataset, val_dataset
+    return train_dataset, val_dataset, X_train.shape[0], X_val.shape[0]
 
 
 def get_input_tfds(train, val, batch_size, shuffle_seed):
@@ -54,7 +54,7 @@ def get_input_tfds(train, val, batch_size, shuffle_seed):
         .batch(batch_size)
         .prefetch(tf.data.AUTOTUNE)
     )
-    return train_dataset, val_dataset
+    return train_dataset, val_dataset, len(list(train)), len(list(val))
 
 
 def get_dataset(dataset_name, batch_size, shuffle_seed, shape=[32, 32, 3]):

@@ -47,7 +47,7 @@ def get_input_tfds(train, val, batch_size, shuffle_seed):
         train.map(preprocessing)
         .cache()
         .map(augmentation)
-        .shuffle(train.shape[0], seed=shuffle_seed)
+        .shuffle(len(list(train)), seed=shuffle_seed)
         .batch(batch_size)
         .prefetch(tf.data.AUTOTUNE)
     )

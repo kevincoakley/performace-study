@@ -4,7 +4,7 @@ import numpy as np
 from datetime import datetime
 import dataset_preprocess
 
-script_version = "1.0.6"
+script_version = "1.0.7"
 
 
 def image_classification(
@@ -14,7 +14,6 @@ def image_classification(
     deterministic=False,
     epochs=50,
     learning_rate=4e-4,
-    lr_decay=45,
     seed_val=1,
     run_name="",
     save_model=False,
@@ -50,22 +49,22 @@ def image_classification(
         "cifar100": {
             "num_class": 100,
             "input_shape": (128, 128, 3),
-            "batch_size": 128,
+            "batch_size": 32,
         },
         "cifar10": {
             "num_class": 10,
             "input_shape": (128, 128, 3),
-            "batch_size": 128,
+            "batch_size": 32,
         },
         "fashion_mnist": {
             "num_class": 10,
             "input_shape": (128, 128, 1),
-            "batch_size": 128,
+            "batch_size": 32,
         },
         "cats_vs_dogs": {
             "num_class": 2,
             "input_shape": (128, 128, 3),
-            "batch_size": 128,
+            "batch_size": 32,
         },
     }
 
@@ -197,16 +196,6 @@ def image_classification(
     model.summary()
 
     """
-    ## Define the learning rate scheduler to decrease the learning rate by 10x every 45 epochs
-    """
-
-    def lr_scheduler(epoch):
-        new_lr = learning_rate * (0.1 ** (epoch // (lr_decay - 1)))
-        return new_lr
-
-    reduce_lr = tf.keras.callbacks.LearningRateScheduler(lr_scheduler)
-
-    """
     ## Create the base name for the log and model files
     """
     base_name = os.path.basename(sys.argv[0]).split(".")[0]
@@ -222,7 +211,7 @@ def image_classification(
     csv_logger = tf.keras.callbacks.CSVLogger(csv_train_log_file)
 
     # Define callbacks
-    callbacks = [reduce_lr, csv_logger]
+    callbacks = [csv_logger]
 
     # Time the training
     start_time = datetime.now()
@@ -326,7 +315,6 @@ def save_score(
     test_accuracy,
     epochs,
     learning_rate,
-    lr_decay,
     training_time,
     model_name,
     dataset_name,
@@ -356,7 +344,6 @@ def save_score(
             "tensorflow_compiler_version",
             "epochs",
             "learning_rate",
-            "lr_decay",
             "model_name",
             "dataset_name",
             "random_seed",
@@ -380,7 +367,6 @@ def save_score(
                 "tensorflow_compiler_version": tf.version.COMPILER_VERSION,
                 "epochs": epochs,
                 "learning_rate": learning_rate,
-                "lr_decay": lr_decay,
                 "model_name": model_name,
                 "dataset_name": dataset_name,
                 "random_seed": seed_val,
@@ -433,14 +419,6 @@ def parse_arguments(args):
         help="Set the learning rate",
         type=float,
         default=4e-4,
-    )
-
-    parser.add_argument(
-        "--lr-decay",
-        dest="lr_decay",
-        help="Number learning rate decay epochs",
-        type=int,
-        default=45,
     )
 
     parser.add_argument(
@@ -513,7 +491,6 @@ if __name__ == "__main__":
             deterministic=args.deterministic,
             epochs=args.epochs,
             learning_rate=args.learning_rate,
-            lr_decay=args.lr_decay,
             seed_val=seed_val,
             run_name=args.run_name,
             save_model=args.save_model,
@@ -524,7 +501,6 @@ if __name__ == "__main__":
             test_accuracy=test_accuracy,
             epochs=args.epochs,
             learning_rate=args.learning_rate,
-            lr_decay=args.lr_decay,
             training_time=training_time,
             model_name=args.model_name,
             dataset_name=args.dataset_name,

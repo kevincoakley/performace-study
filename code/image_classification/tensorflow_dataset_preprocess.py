@@ -24,11 +24,11 @@ def augmentation(image, label):
     return image, label
 
 
-def get_input(train, val, batch_size, shuffle_seed):
+def get_input(train, val, batch_size, dataset_seed_val):
     train_dataset = (
         train.map(preprocessing)
         .map(augmentation)
-        .shuffle(10000, seed=shuffle_seed)
+        .shuffle(10000, seed=dataset_seed_val)
         .batch(batch_size, drop_remainder=True)
         .repeat()
         .prefetch(tf.data.AUTOTUNE)
@@ -37,7 +37,7 @@ def get_input(train, val, batch_size, shuffle_seed):
     return train_dataset, val_dataset, len(list(train)), len(list(val))
 
 
-def get_dataset(dataset_name, batch_size, shuffle_seed, shape=[32, 32, 3]):
+def get_dataset(dataset_name, batch_size, dataset_seed_val, shape=[32, 32, 3]):
     global num_classes
     global image_shape
     image_shape = shape
@@ -48,24 +48,24 @@ def get_dataset(dataset_name, batch_size, shuffle_seed, shape=[32, 32, 3]):
             name="cifar10", split=["train", "test"], as_supervised=True
         )
         print(train_dataset)
-        return get_input(train_dataset, val_dataset, batch_size, shuffle_seed)
+        return get_input(train_dataset, val_dataset, batch_size, dataset_seed_val)
     elif dataset_name == "cifar100":
         num_classes = 100
         train_dataset, val_dataset = tfds.load(
             name="cifar100", split=["train", "test"], as_supervised=True
         )
-        return get_input(train_dataset, val_dataset, batch_size, shuffle_seed)
+        return get_input(train_dataset, val_dataset, batch_size, dataset_seed_val)
     elif dataset_name == "fashion_mnist":
         num_classes = 10
         train_dataset, val_dataset = tfds.load(
             name="fashion_mnist", split=["train", "test"], as_supervised=True
         )
         print(train_dataset)
-        return get_input(train_dataset, val_dataset, batch_size, shuffle_seed)
+        return get_input(train_dataset, val_dataset, batch_size, dataset_seed_val)
     elif dataset_name == "cats_vs_dogs":
         num_classes = 2
         split = ["train[:70%]", "train[70%:]"]
         train_dataset, val_dataset = tfds.load(
             name="cats_vs_dogs", split=split, as_supervised=True
         )
-        return get_input(train_dataset, val_dataset, batch_size, shuffle_seed)
+        return get_input(train_dataset, val_dataset, batch_size, dataset_seed_val)

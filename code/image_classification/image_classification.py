@@ -1,14 +1,13 @@
 import argparse, csv, math, os, random, sys, yaml
-import tensorflow as tf
 import numpy as np
 from datetime import datetime
-import dataset_preprocess
 
-script_version = "1.0.7"
+script_version = "2.0.0"
 
 
 def image_classification(
     run_number,
+    machine_learning_framework="TensorFlow",
     model_name="Densenet",
     dataset_name="cifar10",
     deterministic=False,
@@ -19,181 +18,60 @@ def image_classification(
     save_model=False,
     save_predictions=False,
 ):
+    if machine_learning_framework == "TensorFlow":
+        from tensorflow_framework import Tensorflow
+        framework = Tensorflow()
+    elif machine_learning_framework == "PyTorch":
+        from pytorch_framework import Pytorch 
+        framework = Pytorch()
+
     if deterministic or seed_val != 1:
         """
-        ## Configure Tensorflow for fixed seed runs
+        ## Configure framework for fixed seed runs
         """
-        major, minor, revision = tf.version.VERSION.split(".")
-
-        if int(major) >= 2 and int(minor) >= 7:
-            # Sets all random seeds for the program (Python, NumPy, and TensorFlow).
-            # Supported in TF 2.7.0+
-            tf.keras.utils.set_random_seed(seed_val)
-            print("Setting random seed using tf.keras.utils.set_random_seed()")
-        else:
-            # for TF < 2.7
-            random.seed(seed_val)
-            np.random.seed(seed_val)
-            tf.random.set_seed(seed_val)
-            print("Setting random seeds manually")
-        # Configures TensorFlow ops to run deterministically to enable reproducible
-        # results with GPUs (Supported in TF 2.8.0+)
-        if int(major) >= 2 and int(minor) >= 8:
-            tf.config.experimental.enable_op_determinism()
-            print("Enabled op determinism")
+        framework.deterministic(seed_val)
 
     """
     ## Datasets definition dictionary
     """
     datasets = {
         "cifar100": {
-            "num_class": 100,
+            "num_classes": 100,
             "input_shape": (128, 128, 3),
             "batch_size": 32,
         },
         "cifar10": {
-            "num_class": 10,
+            "num_classes": 10,
             "input_shape": (128, 128, 3),
             "batch_size": 32,
         },
         "fashion_mnist": {
-            "num_class": 10,
+            "num_classes": 10,
             "input_shape": (128, 128, 1),
             "batch_size": 32,
         },
         "cats_vs_dogs": {
-            "num_class": 2,
+            "num_classes": 2,
             "input_shape": (128, 128, 3),
             "batch_size": 32,
         },
     }
 
     input_shape = datasets[dataset_name]["input_shape"]
-    num_class = datasets[dataset_name]["num_class"]
+    num_classes = datasets[dataset_name]["num_classes"]
     batch_size = datasets[dataset_name]["batch_size"]
 
-    """
-    ## Models definition dictionary
-    """
-    models = {
-        "EfficientNet": {
-            "application": tf.keras.applications.EfficientNetB4,
-            "args": {
-                "include_top": True,
-                "weights": None,
-                "input_shape": input_shape,
-                "classes": num_class,
-                "classifier_activation": "softmax",
-            },
-        },
-        "Xception": {
-            "application": tf.keras.applications.Xception,
-            "args": {
-                "include_top": True,
-                "weights": None,
-                "input_shape": input_shape,
-                "classes": num_class,
-                "classifier_activation": "softmax",
-            },
-        },
-        "InceptionV3": {
-            "application": tf.keras.applications.InceptionV3,
-            "args": {
-                "include_top": True,
-                "weights": None,
-                "input_shape": input_shape,
-                "classes": num_class,
-                "classifier_activation": "softmax",
-            },
-        },
-        "ResNet50V2": {
-            "application": tf.keras.applications.resnet_v2.ResNet50V2,
-            "args": {
-                "include_top": True,
-                "weights": None,
-                "input_shape": input_shape,
-                "classes": num_class,
-                "classifier_activation": "softmax",
-            },
-        },
-        "ResNet101V2": {
-            "application": tf.keras.applications.resnet_v2.ResNet101V2,
-            "args": {
-                "include_top": True,
-                "weights": None,
-                "input_shape": input_shape,
-                "classes": num_class,
-                "classifier_activation": "softmax",
-            },
-        },
-        "ResNet152V2": {
-            "application": tf.keras.applications.resnet_v2.ResNet152V2,
-            "args": {
-                "include_top": True,
-                "weights": None,
-                "input_shape": input_shape,
-                "classes": num_class,
-                "classifier_activation": "softmax",
-            },
-        },
-        "DenseNet121": {
-            "application": tf.keras.applications.DenseNet121,
-            "args": {
-                "include_top": True,
-                "weights": None,
-                "input_shape": input_shape,
-                "classes": num_class,
-                "classifier_activation": "softmax",
-            },
-        },
-        "DenseNet169": {
-            "application": tf.keras.applications.DenseNet169,
-            "args": {
-                "include_top": True,
-                "weights": None,
-                "input_shape": input_shape,
-                "classes": num_class,
-                "classifier_activation": "softmax",
-            },
-        },
-        "DenseNet201": {
-            "application": tf.keras.applications.DenseNet201,
-            "args": {
-                "include_top": True,
-                "weights": None,
-                "input_shape": input_shape,
-                "classes": num_class,
-                "classifier_activation": "softmax",
-            },
-        },
-    }
-
+    
     """
     ## Load the dataset
     """
-    train_dataset, val_dataset, train_size, val_size = dataset_preprocess.get_dataset(
-        dataset_name, batch_size, shuffle_seed=42, shape=input_shape
-    )
-
-    # Calculate the number of training and validation steps to
-    # iterate over the entire dataset using the defined batch size.
-    train_steps_per_epoch = train_size // batch_size
-    val_steps_per_epoch = val_size // batch_size
+    # Always use the same random seed for the dataset
+    train_dataset, val_dataset = framework.load_dataset(dataset_name, batch_size, input_shape, 42)
 
     """
     ## Create the model
     """
-    model = tf.keras.Sequential()
-    model.add(models[model_name]["application"](**models[model_name]["args"]))
-
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
-        loss="categorical_crossentropy",
-        metrics=["accuracy"],
-    )
-
-    # Print the model summary
-    model.summary()
+    model = framework.load_model(model_name, input_shape, num_classes)
 
     """
     ## Create the base name for the log and model files
@@ -204,74 +82,29 @@ def image_classification(
         base_name = base_name + "_" + run_name
 
     """
-    ## Define csv logger callback
+    ## Train the model
     """
-    csv_train_log_file = base_name + "_log_" + str(run_number) + ".csv"
-
-    csv_logger = tf.keras.callbacks.CSVLogger(csv_train_log_file)
-
-    # Define callbacks
-    callbacks = [csv_logger]
-
     # Time the training
     start_time = datetime.now()
 
     # Train the model
-    model.fit(
-        train_dataset,
-        epochs=epochs,
-        steps_per_epoch=train_steps_per_epoch,
-        validation_data=val_dataset,
-        callbacks=callbacks,
-    )
+    trained_model = framework.train(model, train_dataset, val_dataset, epochs, learning_rate)
 
     # Calculate the training time
     end_time = datetime.now()
     training_time = end_time - start_time
 
     """
-    ## Evaluate the trained model
+    ## Evaluate the trained model and save the predictions
     """
-    score = model.evaluate(val_dataset, steps=val_steps_per_epoch, verbose=0)
+    predictions_csv_file = base_name + "_predictions_seed_" + str(seed_val) + ".csv"
+
+    score = framework.evaluate(trained_model, val_dataset, save_predictions, predictions_csv_file)
 
     print("Test loss: ", score[0])
     print("Test accuracy: ", score[1])
     print("Training time: ", training_time)
-
-    """
-    ## Get and save the predictions
-    """
-    if save_predictions:
-        # Get the predictions
-        predictions = model.predict(val_dataset)
-
-        # Get the labels of the validation dataset
-        val_dataset = val_dataset.unbatch()
-        labels = np.asarray(list(val_dataset.map(lambda x, y: y)))
-
-        # Get the index to the highest probability
-        y_true = np.argmax(labels, axis=1)
-        y_pred = np.argmax(predictions, axis=1)
-
-        predictions_csv_file = base_name + "_predictions_seed_" + str(seed_val) + ".csv"
-
-        # Add the true values to the first column and the predicted values to the second column
-        true_and_pred = np.vstack((y_true, y_pred)).T
-
-        # Add each label predictions to the true and predicted values
-        csv_output_array = np.concatenate((true_and_pred, predictions), axis=1)
-
-        # Save the predictions to a csv file
-        with open(predictions_csv_file, "w") as csvfile:
-            writer = csv.writer(csvfile)
-
-            csv_columns = ["true_value", "predicted_value"]
-            for i in range(predictions.shape[1]):
-                csv_columns.append("label_" + str(i))
-
-            writer.writerow(csv_columns)
-            writer.writerows(csv_output_array.tolist())
-
+ 
     """
     ## Save the model
     """
@@ -282,14 +115,20 @@ def image_classification(
         model_path = "models/"
 
         if run_name != "":
-            if os.path.exists("models/") == False:
+            if os.path.exists("models/" + run_name + "/") == False:
                 os.mkdir("models/" + run_name + "/")
             model_path = "models/" + run_name + "/"
 
         if deterministic or seed_val != 1:
-            model_path = model_path + base_name + "_seed_" + str(seed_val) + ".h5"
+            model_path = model_path + base_name + "_seed_" + str(seed_val)
 
-        model.save(model_path)
+        # Append the file extension based on the machine learning framework            
+        if machine_learning_framework == "TensorFlow":
+            model_path = model_path + ".h5"
+        elif machine_learning_framework == "PyTorch":
+            model_path = model_path + ".pth"
+             
+        framework.save(model, model_path)
 
     return score[0], score[1], training_time
 
@@ -313,6 +152,7 @@ def get_system_info():
 def save_score(
     test_loss,
     test_accuracy,
+    machine_learning_framework,
     epochs,
     learning_rate,
     training_time,
@@ -322,6 +162,13 @@ def save_score(
     seed_val,
     run_name="",
 ):
+    if machine_learning_framework == "TensorFlow":
+        from tensorflow_framework import Tensorflow
+        framework = Tensorflow()
+    elif machine_learning_framework == "PyTorch":
+        from pytorch_framework import Pytorch 
+        framework = Pytorch()
+
     csv_file = os.path.basename(sys.argv[0]).split(".")[0] + ".csv"
     write_header = False
 
@@ -340,8 +187,8 @@ def save_score(
             "date_time",
             "fit_time",
             "python_version",
-            "tensorflow_version",
-            "tensorflow_compiler_version",
+            "machine_learning_framework",
+            "framework_version",
             "epochs",
             "learning_rate",
             "model_name",
@@ -363,8 +210,8 @@ def save_score(
                 "date_time": datetime.now(),
                 "fit_time": training_time,
                 "python_version": sys.version.replace("\n", ""),
-                "tensorflow_version": tf.version.VERSION,
-                "tensorflow_compiler_version": tf.version.COMPILER_VERSION,
+                "machine_learning_framework": machine_learning_framework,
+                "framework_version": framework.version,
                 "epochs": epochs,
                 "learning_rate": learning_rate,
                 "model_name": model_name,
@@ -440,17 +287,28 @@ def parse_arguments(args):
     )
 
     parser.add_argument(
+        "--ml-framework",
+        dest="machine_learning_framework",
+        help="Name of Machine Learning framework",
+        default="TensorFlow",
+        choices=[
+            "TensorFlow",
+            "PyTorch",
+        ],
+        required=True,
+    )
+
+    parser.add_argument(
         "--model-name",
         dest="model_name",
         help="Name of model to train",
         default="DenseNet",
         choices=[
-            "EfficientNet",
-            "Xception",
+            "EfficientNetB4",
             "InceptionV3",
-            "ResNet50V2",
-            "ResNet101V2",
-            "ResNet152V2",
+            "ResNet50",
+            "ResNet101",
+            "ResNet152",
             "DenseNet121",
             "DenseNet169",
             "DenseNet201",
@@ -481,11 +339,12 @@ if __name__ == "__main__":
             seed_val = random.randint(0, 2**32 - 1)
 
         print(
-            "\nImage Classification (%s - %s): %s of %s [%s]\n======================\n"
-            % (args.model_name, args.dataset_name, str(x + 1), args.num_runs, seed_val)
+            "\nImage Classification (%s - %s - %s): %s of %s [%s]\n======================\n"
+            % (args.machine_learning_framework, args.model_name, args.dataset_name, str(x + 1), args.num_runs, seed_val)
         )
         test_loss, test_accuracy, training_time = image_classification(
             x + 1,
+            machine_learning_framework=args.machine_learning_framework,
             model_name=args.model_name,
             dataset_name=args.dataset_name,
             deterministic=args.deterministic,
@@ -499,6 +358,7 @@ if __name__ == "__main__":
         save_score(
             test_loss=test_loss,
             test_accuracy=test_accuracy,
+            machine_learning_framework=args.machine_learning_framework,
             epochs=args.epochs,
             learning_rate=args.learning_rate,
             training_time=training_time,

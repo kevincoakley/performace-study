@@ -6,12 +6,12 @@ import numpy as np
 from sklearn.metrics import accuracy_score
 
 
-class Tensorflow():
+class Tensorflow:
     def __init__(self):
         self.version = tf.version.VERSION
         self.train_steps_per_epoch = None
         self.val_steps_per_epoch = None
-        
+
     def deterministic(self, seed_val):
         """
         ## Configure Tensorflow for fixed seed runs
@@ -35,10 +35,18 @@ class Tensorflow():
             tf.config.experimental.enable_op_determinism()
             print("Enabled op determinism")
 
-    def load_dataset(self, dataset_name, batch_size, input_shape, dataset_seed_val):     
-        train_dataset, val_dataset, train_size, val_size = tensorflow_dataset_preprocess.get_dataset(
-            dataset_name, batch_size, dataset_seed_val=dataset_seed_val, shape=input_shape
-        )   
+    def load_dataset(self, dataset_name, batch_size, input_shape, dataset_seed_val):
+        (
+            train_dataset,
+            val_dataset,
+            train_size,
+            val_size,
+        ) = tensorflow_dataset_preprocess.get_dataset(
+            dataset_name,
+            batch_size,
+            dataset_seed_val=dataset_seed_val,
+            shape=input_shape,
+        )
 
         self.train_steps_per_epoch = train_size // batch_size
         self.val_steps_per_epoch = val_size // batch_size
@@ -130,12 +138,15 @@ class Tensorflow():
         }
 
         model = tf.keras.Sequential()
-        model.add(model_dictionary[model_name]["application"](**model_dictionary[model_name]["args"]))
+        model.add(
+            model_dictionary[model_name]["application"](
+                **model_dictionary[model_name]["args"]
+            )
+        )
 
         return model
 
     def train(self, model, train_dataset, val_dataset, epochs, learning_rate):
- 
         model.compile(
             optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
             loss="categorical_crossentropy",
@@ -148,12 +159,12 @@ class Tensorflow():
         """
         ## Define csv logger callback
         """
-        #csv_train_log_file = base_name + "_log_" + str(run_number) + ".csv"
+        # csv_train_log_file = base_name + "_log_" + str(run_number) + ".csv"
 
-        #csv_logger = tf.keras.callbacks.CSVLogger(csv_train_log_file)
+        # csv_logger = tf.keras.callbacks.CSVLogger(csv_train_log_file)
 
         # Define callbacks
-        #callbacks = [csv_logger]
+        # callbacks = [csv_logger]
 
         # Train the model
         model.fit(
@@ -161,12 +172,14 @@ class Tensorflow():
             epochs=epochs,
             steps_per_epoch=self.train_steps_per_epoch,
             validation_data=val_dataset,
-            #callbacks=callbacks,
+            # callbacks=callbacks,
         )
 
         return model
 
-    def evaluate(self, model, val_dataset, save_predictions=False, predictions_csv_file=None):
+    def evaluate(
+        self, model, val_dataset, save_predictions=False, predictions_csv_file=None
+    ):
         # Get the predictions
         predictions = model.predict(val_dataset)
 
@@ -178,7 +191,7 @@ class Tensorflow():
         y_true = np.argmax(labels, axis=1)
         y_pred = np.argmax(predictions, axis=1)
 
-        if save_predictions:            
+        if save_predictions:
             # Add the true values to the first column and the predicted values to the second column
             true_and_pred = np.vstack((y_true, y_pred)).T
 

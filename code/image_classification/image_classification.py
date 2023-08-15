@@ -20,9 +20,11 @@ def image_classification(
 ):
     if machine_learning_framework == "TensorFlow":
         from tensorflow_framework import Tensorflow
+
         framework = Tensorflow()
     elif machine_learning_framework == "PyTorch":
-        from pytorch_framework import Pytorch 
+        from pytorch_framework import Pytorch
+
         framework = Pytorch()
 
     if deterministic or seed_val != 1:
@@ -61,12 +63,13 @@ def image_classification(
     num_classes = datasets[dataset_name]["num_classes"]
     batch_size = datasets[dataset_name]["batch_size"]
 
-    
     """
     ## Load the dataset
     """
     # Always use the same random seed for the dataset
-    train_dataset, val_dataset = framework.load_dataset(dataset_name, batch_size, input_shape, 42)
+    train_dataset, val_dataset = framework.load_dataset(
+        dataset_name, batch_size, input_shape, 42
+    )
 
     """
     ## Create the model
@@ -88,7 +91,9 @@ def image_classification(
     start_time = datetime.now()
 
     # Train the model
-    trained_model = framework.train(model, train_dataset, val_dataset, epochs, learning_rate)
+    trained_model = framework.train(
+        model, train_dataset, val_dataset, epochs, learning_rate
+    )
 
     # Calculate the training time
     end_time = datetime.now()
@@ -99,12 +104,14 @@ def image_classification(
     """
     predictions_csv_file = base_name + "_predictions_seed_" + str(seed_val) + ".csv"
 
-    score = framework.evaluate(trained_model, val_dataset, save_predictions, predictions_csv_file)
+    score = framework.evaluate(
+        trained_model, val_dataset, save_predictions, predictions_csv_file
+    )
 
     print("Test loss: ", score[0])
     print("Test accuracy: ", score[1])
     print("Training time: ", training_time)
- 
+
     """
     ## Save the model
     """
@@ -122,12 +129,12 @@ def image_classification(
         if deterministic or seed_val != 1:
             model_path = model_path + base_name + "_seed_" + str(seed_val)
 
-        # Append the file extension based on the machine learning framework            
+        # Append the file extension based on the machine learning framework
         if machine_learning_framework == "TensorFlow":
             model_path = model_path + ".h5"
         elif machine_learning_framework == "PyTorch":
             model_path = model_path + ".pth"
-             
+
         framework.save(model, model_path)
 
     return score[0], score[1], training_time
@@ -164,9 +171,11 @@ def save_score(
 ):
     if machine_learning_framework == "TensorFlow":
         from tensorflow_framework import Tensorflow
+
         framework = Tensorflow()
     elif machine_learning_framework == "PyTorch":
-        from pytorch_framework import Pytorch 
+        from pytorch_framework import Pytorch
+
         framework = Pytorch()
 
     csv_file = os.path.basename(sys.argv[0]).split(".")[0] + ".csv"
@@ -340,7 +349,14 @@ if __name__ == "__main__":
 
         print(
             "\nImage Classification (%s - %s - %s): %s of %s [%s]\n======================\n"
-            % (args.machine_learning_framework, args.model_name, args.dataset_name, str(x + 1), args.num_runs, seed_val)
+            % (
+                args.machine_learning_framework,
+                args.model_name,
+                args.dataset_name,
+                str(x + 1),
+                args.num_runs,
+                seed_val,
+            )
         )
         test_loss, test_accuracy, training_time = image_classification(
             x + 1,

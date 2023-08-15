@@ -6,18 +6,18 @@ import numpy as np
 from sklearn.metrics import accuracy_score
 
 
-class Pytorch():
+class Pytorch:
     def __init__(self):
         self.version = torch.__version__
         self.device = torch.device("cuda:0")
-        
+
     def deterministic(self, seed_val):
         torch.manual_seed(seed_val)
         random.seed(seed_val)
         np.random.seed(seed_val)
         torch.use_deterministic_algorithms(True)
 
-    def load_dataset(self, dataset_name, batch_size, input_shape, dataset_seed_val):     
+    def load_dataset(self, dataset_name, batch_size, input_shape, dataset_seed_val):
         data_generator = torch.Generator()
         data_generator.manual_seed(dataset_seed_val)
 
@@ -25,7 +25,11 @@ class Pytorch():
             [
                 torchvision.transforms.ToTensor(),
                 torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-                torchvision.transforms.Resize((128, 128), antialias=False, interpolation=torchvision.transforms.InterpolationMode.NEAREST),
+                torchvision.transforms.Resize(
+                    (128, 128),
+                    antialias=False,
+                    interpolation=torchvision.transforms.InterpolationMode.NEAREST,
+                ),
             ]
         )
 
@@ -33,7 +37,11 @@ class Pytorch():
             [
                 torchvision.transforms.ToTensor(),
                 torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-                torchvision.transforms.Resize((128, 128), antialias=False, interpolation=torchvision.transforms.InterpolationMode.NEAREST),
+                torchvision.transforms.Resize(
+                    (128, 128),
+                    antialias=False,
+                    interpolation=torchvision.transforms.InterpolationMode.NEAREST,
+                ),
                 torchvision.transforms.Pad(10),
                 torchvision.transforms.RandomCrop((128, 128)),
                 torchvision.transforms.RandomHorizontalFlip(),
@@ -64,7 +72,7 @@ class Pytorch():
         elif dataset_name == "cats_vs_dogs":
             pass
 
-        train_dataloader  = torch.utils.data.DataLoader(
+        train_dataloader = torch.utils.data.DataLoader(
             train_dataset,
             batch_size=batch_size,
             shuffle=True,
@@ -143,14 +151,16 @@ class Pytorch():
             },
         }
 
-        model = model_dictionary[model_name]["application"](**model_dictionary[model_name]["args"])
+        model = model_dictionary[model_name]["application"](
+            **model_dictionary[model_name]["args"]
+        )
         model.to(self.device)
 
         return model
 
     def train(self, model, train_dataloader, val_dataloader, epochs, learning_rate):
         criterion = torch.nn.CrossEntropyLoss()
-        
+
         # optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
@@ -178,7 +188,9 @@ class Pytorch():
 
         return model
 
-    def evaluate(self, model, dataloader, save_predictions=False, predictions_csv_file=None):
+    def evaluate(
+        self, model, dataloader, save_predictions=False, predictions_csv_file=None
+    ):
         criterion = torch.nn.CrossEntropyLoss()
         loss = 0
 
@@ -194,7 +206,7 @@ class Pytorch():
 
                 # Calculate the prediction values for each image
                 outputs = model(images)
-               
+
                 # Calculate the loss for the batch
                 loss += criterion(outputs, labels)
 
@@ -208,8 +220,7 @@ class Pytorch():
                     # loop through the batch and add each prediction to the predictions list
                     for output in outputs:
                         predictions.append(output.tolist())
-        
-                    
+
         if save_predictions:
             # Add the true values to the first column and the predicted values to the second column
             true_and_pred = np.vstack((sklearn_labels, sklearn_pred)).T

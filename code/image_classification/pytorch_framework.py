@@ -17,7 +17,7 @@ class Pytorch:
         np.random.seed(seed_val)
         torch.use_deterministic_algorithms(True)
 
-    def load_dataset(self, dataset_name, batch_size, input_shape, dataset_seed_val):
+    def load_dataset(self, dataset_name, batch_size, image_shape, dataset_seed_val):
         data_generator = torch.Generator()
         data_generator.manual_seed(dataset_seed_val)
 
@@ -26,7 +26,7 @@ class Pytorch:
                 torchvision.transforms.ToTensor(),
                 torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                 torchvision.transforms.Resize(
-                    (128, 128),
+                    image_shape[:2],
                     antialias=False,
                     interpolation=torchvision.transforms.InterpolationMode.NEAREST,
                 ),
@@ -38,7 +38,7 @@ class Pytorch:
                 torchvision.transforms.ToTensor(),
                 torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                 torchvision.transforms.Resize(
-                    (128, 128),
+                    image_shape[:2],
                     antialias=False,
                     interpolation=torchvision.transforms.InterpolationMode.NEAREST,
                 ),

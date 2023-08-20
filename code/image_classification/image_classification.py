@@ -17,6 +17,7 @@ def image_classification(
     run_name="",
     save_model=False,
     save_predictions=False,
+    save_epoch_logs=False,
 ):
     if machine_learning_framework == "TensorFlow":
         from tensorflow_framework import Tensorflow
@@ -90,9 +91,28 @@ def image_classification(
     # Time the training
     start_time = datetime.now()
 
+    if deterministic or seed_val != 1:
+        csv_train_log_file = "%s_log_%s_%s.csv" % (
+            base_name,
+            machine_learning_framework,
+            seed_val,
+        )
+    else:
+        csv_train_log_file = "%s_log_%s_%s.csv" % (
+            base_name,
+            machine_learning_framework,
+            run_number,
+        )
+
     # Train the model
     trained_model = framework.train(
-        model, train_dataset, val_dataset, epochs, learning_rate
+        model,
+        train_dataset,
+        val_dataset,
+        epochs,
+        learning_rate,
+        save_epoch_logs,
+        csv_train_log_file,
     )
 
     # Calculate the training time
@@ -296,6 +316,13 @@ def parse_arguments(args):
     )
 
     parser.add_argument(
+        "--save-epoch-logs",
+        dest="save_epoch_logs",
+        help="Save the accuracy and loss logs for each epoch",
+        action="store_true",
+    )
+
+    parser.add_argument(
         "--ml-framework",
         dest="machine_learning_framework",
         help="Name of Machine Learning framework",
@@ -370,6 +397,7 @@ if __name__ == "__main__":
             run_name=args.run_name,
             save_model=args.save_model,
             save_predictions=args.save_predictions,
+            save_epoch_logs=args.save_epoch_logs,
         )
         save_score(
             test_loss=test_loss,

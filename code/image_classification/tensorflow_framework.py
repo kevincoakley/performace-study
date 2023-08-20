@@ -146,7 +146,16 @@ class Tensorflow:
 
         return model
 
-    def train(self, model, train_dataset, val_dataset, epochs, learning_rate):
+    def train(
+        self,
+        model,
+        train_dataset,
+        val_dataset,
+        epochs,
+        learning_rate,
+        save_epoch_logs=False,
+        csv_train_log_file=None,
+    ):
         model.compile(
             optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
             loss="categorical_crossentropy",
@@ -156,15 +165,14 @@ class Tensorflow:
         # Print the model summary
         model.summary()
 
-        """
         ## Define csv logger callback
-        """
-        # csv_train_log_file = base_name + "_log_" + str(run_number) + ".csv"
-
-        # csv_logger = tf.keras.callbacks.CSVLogger(csv_train_log_file)
+        csv_logger = tf.keras.callbacks.CSVLogger(csv_train_log_file)
 
         # Define callbacks
-        # callbacks = [csv_logger]
+        if save_epoch_logs:
+            callbacks = [csv_logger]
+        else:
+            callbacks = []
 
         # Train the model
         model.fit(
@@ -172,7 +180,7 @@ class Tensorflow:
             epochs=epochs,
             steps_per_epoch=self.train_steps_per_epoch,
             validation_data=val_dataset,
-            # callbacks=callbacks,
+            callbacks=callbacks,
         )
 
         return model

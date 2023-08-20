@@ -158,7 +158,18 @@ class Pytorch:
 
         return model
 
-    def train(self, model, train_dataloader, val_dataloader, epochs, learning_rate):
+    def train(
+        self,
+        model,
+        train_dataloader,
+        val_dataloader,
+        epochs,
+        learning_rate,
+        save_epoch_logs=False,
+        csv_train_log_file=None,
+    ):
+        epoch_logs = []
+
         loss_function = torch.nn.CrossEntropyLoss()
 
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -265,6 +276,26 @@ class Pytorch:
                     validation_accuracy,
                 )
             )
+
+            epoch_logs.append(
+                [
+                    epoch,
+                    train_accuracy,
+                    train_loss,
+                    validation_accuracy,
+                    validation_loss,
+                ]
+            )
+
+        if save_epoch_logs:
+            # Save the epoch log to a csv file
+            with open(csv_train_log_file, "w") as csvfile:
+                writer = csv.writer(csvfile)
+
+                csv_columns = ["epoch", "accuracy", "loss", "val_accuracy", "val_loss"]
+
+                writer.writerow(csv_columns)
+                writer.writerows(epoch_logs)
 
         return model
 

@@ -17,7 +17,15 @@ class Pytorch:
         np.random.seed(seed_val)
         torch.use_deterministic_algorithms(True)
 
-    def load_dataset(self, dataset_name, batch_size, image_shape, dataset_seed_val):
+    def load_dataset(
+        self,
+        train_path,
+        val_path,
+        num_classes,
+        batch_size,
+        image_shape,
+        dataset_seed_val,
+    ):
         data_generator = torch.Generator()
         data_generator.manual_seed(dataset_seed_val)
 
@@ -48,29 +56,12 @@ class Pytorch:
             ]
         )
 
-        if dataset_name == "cifar10":
-            train_dataset = torchvision.datasets.CIFAR10(
-                root="./data", train=True, download=True, transform=transform_augment
-            )
-            val_dataset = torchvision.datasets.CIFAR10(
-                root="./data", train=False, download=True, transform=transform
-            )
-        elif dataset_name == "cifar100":
-            train_dataset = torchvision.datasets.CIFAR100(
-                root="./data", train=True, download=True, transform=transform_augment
-            )
-            val_dataset = torchvision.datasets.CIFAR100(
-                root="./data", train=False, download=True, transform=transform
-            )
-        elif dataset_name == "fashion_mnist":
-            train_dataset = torchvision.datasets.FashionMNIST(
-                root="./data", train=True, download=True, transform=transform_augment
-            )
-            val_dataset = torchvision.datasets.FashionMNIST(
-                root="./data", train=False, download=True, transform=transform
-            )
-        elif dataset_name == "cats_vs_dogs":
-            pass
+        train_dataset = torchvision.datasets.ImageFolder(
+            root=train_path, transform=transform_augment
+        )
+        val_dataset = torchvision.datasets.ImageFolder(
+            root=val_path, transform=transform
+        )
 
         train_dataloader = torch.utils.data.DataLoader(
             train_dataset,

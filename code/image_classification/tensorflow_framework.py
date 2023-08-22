@@ -1,5 +1,4 @@
 import tensorflow as tf
-import tensorflow_dataset_preprocess
 
 import csv, random
 import numpy as np
@@ -35,21 +34,63 @@ class Tensorflow:
             tf.config.experimental.enable_op_determinism()
             print("Enabled op determinism")
 
-    def load_dataset(self, dataset_name, batch_size, input_shape, dataset_seed_val):
-        (
-            train_dataset,
-            val_dataset,
-            train_size,
-            val_size,
-        ) = tensorflow_dataset_preprocess.get_dataset(
-            dataset_name,
-            batch_size,
-            dataset_seed_val=dataset_seed_val,
-            shape=input_shape,
+    def load_dataset(
+        self,
+        train_path,
+        val_path,
+        num_classes,
+        batch_size,
+        image_shape,
+        dataset_seed_val,
+    ):
+        def preprocessing(image, label):
+            image = tf.cast(image, tf.float32)
+            # Normalize the pixel values ((input[channel] - mean[channel]) / std[channel])
+            image = tf.divide(
+                image, (255.0, 255.0, 255.0)
+            )  # divide by 255 to match pytorch
+            image = tf.subtract(image, (0.5, 0.5, 0.5))
+            image = tf.divide(image, (0.5, 0.5, 0.5))
+            image = tf.image.resize(
+                image, image_shape[:2], antialias=False, method="nearest"
+            )
+            return image, tf.squeeze(tf.one_hot(label, depth=num_classes))
+
+        def augmentation(image, label):
+            image = tf.image.resize_with_crop_or_pad(
+                image, image_shape[0] + 20, image_shape[1] + 20
+            )
+            image = tf.image.random_crop(image, image_shape)
+            image = tf.image.random_flip_left_right(image)
+            return image, label
+
+        # Get the training and validation datasets from the directory
+        train = tf.keras.utils.image_dataset_from_directory(
+            train_path, shuffle=True, image_size=(32, 32), batch_size=None
+        )
+        val = tf.keras.utils.image_dataset_from_directory(
+            val_path, shuffle=False, image_size=(32, 32), batch_size=None
         )
 
-        self.train_steps_per_epoch = train_size // batch_size
-        self.val_steps_per_epoch = val_size // batch_size
+        # Preprocess and augment the train dataset
+        train_dataset = (
+            train.map(preprocessing)
+            .map(augmentation)
+            .shuffle(10000, seed=dataset_seed_val)
+            .batch(batch_size, drop_remainder=True)
+            .repeat()
+            .prefetch(tf.data.AUTOTUNE)
+        )
+
+        # Only preprocess the validation dataset
+        val_dataset = (
+            val.map(preprocessing).batch(batch_size).prefetch(tf.data.AUTOTUNE)
+        )
+
+        # Calculate the number of steps per epoch by dividing the number of images in
+        # the dataset by the batch size
+        self.train_steps_per_epoch = len(list(train)) // batch_size
+        self.val_steps_per_epoch = len(list(val)) // batch_size
 
         return train_dataset, val_dataset
 

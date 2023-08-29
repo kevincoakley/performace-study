@@ -52,6 +52,13 @@ def image_classification(
             "input_shape": (128, 128, 3),
             "batch_size": 32,
         },
+        "cats_vs_dogs": {
+            "train_path": "./cats_vs_dogs/train/",
+            "val_path": "./cats_vs_dogs/test/",
+            "num_classes": 2,
+            "input_shape": (128, 128, 3),
+            "batch_size": 32,
+        },
     }
 
     train_path = datasets[dataset_name]["train_path"]
@@ -353,7 +360,7 @@ def parse_arguments(args):
         dest="dataset_name",
         help="cifar10, cifar100, fashion_mnist",
         default="cifar10",
-        choices=["cifar10", "cifar100", "fashion_mnist", "cats_vs_dogs"],
+        choices=["cifar10", "cifar100", "cats_vs_dogs"],
         required=True,
     )
 

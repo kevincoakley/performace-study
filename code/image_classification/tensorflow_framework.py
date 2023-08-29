@@ -66,10 +66,18 @@ class Tensorflow:
 
         # Get the training and validation datasets from the directory
         train = tf.keras.utils.image_dataset_from_directory(
-            train_path, shuffle=True, image_size=(32, 32), batch_size=None
+            train_path,
+            shuffle=True,
+            image_size=image_shape[:2],
+            interpolation="nearest",
+            batch_size=None,
         )
         val = tf.keras.utils.image_dataset_from_directory(
-            val_path, shuffle=False, image_size=(32, 32), batch_size=None
+            val_path,
+            shuffle=False,
+            image_size=image_shape[:2],
+            interpolation="nearest",
+            batch_size=None,
         )
 
         # Preprocess and augment the train dataset

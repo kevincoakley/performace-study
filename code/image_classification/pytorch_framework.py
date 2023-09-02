@@ -4,6 +4,7 @@ import torchvision
 import csv, random
 import numpy as np
 from sklearn.metrics import accuracy_score
+from datetime import datetime
 
 
 class Pytorch:
@@ -70,6 +71,7 @@ class Pytorch:
             drop_last=True,
             num_workers=1,
             generator=data_generator,
+            pin_memory=True,
         )
 
         val_dataloader = torch.utils.data.DataLoader(
@@ -78,6 +80,7 @@ class Pytorch:
             shuffle=False,
             num_workers=1,
             generator=data_generator,
+            pin_memory=True,
         )
 
         return train_dataloader, val_dataloader
@@ -220,6 +223,8 @@ class Pytorch:
         for epoch in range(epochs):
             print("EPOCH %s/%s:" % (epoch + 1, epochs))
 
+            start_time = datetime.now()
+
             # Make sure gradient tracking is on, and do a pass over the data
             model.train(True)
             train_loss, train_accuracy = train_one_epoch()
@@ -256,8 +261,12 @@ class Pytorch:
                 running_val_labels, running_val_predicted
             )
 
+            # Calculate the epoch time
+            end_time = datetime.now()
+            epoch_time = end_time - start_time
+
             print(
-                "EPOCH %s/%s END: TRAIN loss: %s acc: %s VAL loss: %s acc: %s"
+                "EPOCH %s/%s END: TRAIN loss: %s acc: %s VAL loss: %s acc: %s (time: %s)"
                 % (
                     epoch + 1,
                     epochs,
@@ -265,6 +274,7 @@ class Pytorch:
                     train_accuracy,
                     validation_loss,
                     validation_accuracy,
+                    epoch_time,
                 )
             )
 

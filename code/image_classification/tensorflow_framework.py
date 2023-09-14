@@ -40,7 +40,8 @@ class Tensorflow:
         val_path,
         num_classes,
         batch_size,
-        image_shape,
+        dataset_shape,
+        training_shape,
         dataset_seed_val,
     ):
         def preprocessing(image, label):
@@ -52,15 +53,15 @@ class Tensorflow:
             image = tf.subtract(image, (0.5, 0.5, 0.5))
             image = tf.divide(image, (0.5, 0.5, 0.5))
             image = tf.image.resize(
-                image, image_shape[:2], antialias=False, method="nearest"
+                image, training_shape[:2], antialias=False, method="nearest"
             )
             return image, tf.squeeze(tf.one_hot(label, depth=num_classes))
 
         def augmentation(image, label):
             image = tf.image.resize_with_crop_or_pad(
-                image, image_shape[0] + 20, image_shape[1] + 20
+                image, training_shape[0] + 20, training_shape[1] + 20
             )
-            image = tf.image.random_crop(image, image_shape)
+            image = tf.image.random_crop(image, training_shape)
             image = tf.image.random_flip_left_right(image)
             return image, label
 
@@ -68,14 +69,14 @@ class Tensorflow:
         train = tf.keras.utils.image_dataset_from_directory(
             train_path,
             shuffle=True,
-            image_size=image_shape[:2],
+            image_size=dataset_shape[:2],
             interpolation="nearest",
             batch_size=None,
         )
         val = tf.keras.utils.image_dataset_from_directory(
             val_path,
             shuffle=False,
-            image_size=image_shape[:2],
+            image_size=dataset_shape[:2],
             interpolation="nearest",
             batch_size=None,
         )
@@ -102,14 +103,14 @@ class Tensorflow:
 
         return train_dataset, val_dataset
 
-    def load_model(self, model_name, input_shape, num_classes):
+    def load_model(self, model_name, training_shape, num_classes):
         model_dictionary = {
             "EfficientNetB4": {
                 "application": tf.keras.applications.EfficientNetB4,
                 "args": {
                     "include_top": True,
                     "weights": None,
-                    "input_shape": input_shape,
+                    "input_shape": training_shape,
                     "classes": num_classes,
                     "classifier_activation": "softmax",
                 },
@@ -119,7 +120,7 @@ class Tensorflow:
                 "args": {
                     "include_top": True,
                     "weights": None,
-                    "input_shape": input_shape,
+                    "input_shape": training_shape,
                     "classes": num_classes,
                     "classifier_activation": "softmax",
                 },
@@ -129,7 +130,7 @@ class Tensorflow:
                 "args": {
                     "include_top": True,
                     "weights": None,
-                    "input_shape": input_shape,
+                    "input_shape": training_shape,
                     "classes": num_classes,
                     "classifier_activation": "softmax",
                 },
@@ -139,7 +140,7 @@ class Tensorflow:
                 "args": {
                     "include_top": True,
                     "weights": None,
-                    "input_shape": input_shape,
+                    "input_shape": training_shape,
                     "classes": num_classes,
                     "classifier_activation": "softmax",
                 },
@@ -149,7 +150,7 @@ class Tensorflow:
                 "args": {
                     "include_top": True,
                     "weights": None,
-                    "input_shape": input_shape,
+                    "input_shape": training_shape,
                     "classes": num_classes,
                     "classifier_activation": "softmax",
                 },
@@ -159,7 +160,7 @@ class Tensorflow:
                 "args": {
                     "include_top": True,
                     "weights": None,
-                    "input_shape": input_shape,
+                    "input_shape": training_shape,
                     "classes": num_classes,
                     "classifier_activation": "softmax",
                 },
@@ -169,7 +170,7 @@ class Tensorflow:
                 "args": {
                     "include_top": True,
                     "weights": None,
-                    "input_shape": input_shape,
+                    "input_shape": training_shape,
                     "classes": num_classes,
                     "classifier_activation": "softmax",
                 },
@@ -179,7 +180,7 @@ class Tensorflow:
                 "args": {
                     "include_top": True,
                     "weights": None,
-                    "input_shape": input_shape,
+                    "input_shape": training_shape,
                     "classes": num_classes,
                     "classifier_activation": "softmax",
                 },

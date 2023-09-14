@@ -24,7 +24,8 @@ class Pytorch:
         val_path,
         num_classes,
         batch_size,
-        image_shape,
+        dataset_shape,
+        training_shape,
         dataset_seed_val,
     ):
         data_generator = torch.Generator()
@@ -35,7 +36,7 @@ class Pytorch:
                 torchvision.transforms.ToTensor(),
                 torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                 torchvision.transforms.Resize(
-                    image_shape[:2],
+                    training_shape[:2],
                     antialias=False,
                     interpolation=torchvision.transforms.InterpolationMode.NEAREST,
                 ),
@@ -47,12 +48,12 @@ class Pytorch:
                 torchvision.transforms.ToTensor(),
                 torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                 torchvision.transforms.Resize(
-                    image_shape[:2],
+                    training_shape[:2],
                     antialias=False,
                     interpolation=torchvision.transforms.InterpolationMode.NEAREST,
                 ),
                 torchvision.transforms.Pad(10),
-                torchvision.transforms.RandomCrop((128, 128)),
+                torchvision.transforms.RandomCrop(training_shape[:2]),
                 torchvision.transforms.RandomHorizontalFlip(),
             ]
         )
@@ -85,7 +86,7 @@ class Pytorch:
 
         return train_dataloader, val_dataloader
 
-    def load_model(self, model_name, input_shape, num_classes):
+    def load_model(self, model_name, training_shape, num_classes):
         model_dictionary = {
             "EfficientNetB4": {
                 "application": torchvision.models.efficientnet_b4,

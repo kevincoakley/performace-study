@@ -42,28 +42,32 @@ def image_classification(
             "train_path": "./cifar100/train/",
             "val_path": "./cifar100/test/",
             "num_classes": 100,
-            "input_shape": (128, 128, 3),
+            "dataset_shape": (32, 32, 3),
+            "training_shape": (128, 128, 3),
             "batch_size": 32,
         },
         "cifar10": {
             "train_path": "./cifar10/train/",
             "val_path": "./cifar10/test/",
             "num_classes": 10,
-            "input_shape": (128, 128, 3),
+            "dataset_shape": (32, 32, 3),
+            "training_shape": (128, 128, 3),
             "batch_size": 32,
         },
         "cats_vs_dogs": {
             "train_path": "./cats_vs_dogs/train/",
             "val_path": "./cats_vs_dogs/test/",
             "num_classes": 2,
-            "input_shape": (128, 128, 3),
+            "dataset_shape": (128, 128, 3),
+            "training_shape": (128, 128, 3),
             "batch_size": 32,
         },
     }
 
     train_path = datasets[dataset_name]["train_path"]
     val_path = datasets[dataset_name]["val_path"]
-    input_shape = datasets[dataset_name]["input_shape"]
+    dataset_shape = datasets[dataset_name]["dataset_shape"]
+    training_shape = datasets[dataset_name]["training_shape"]
     num_classes = datasets[dataset_name]["num_classes"]
     batch_size = datasets[dataset_name]["batch_size"]
 
@@ -72,13 +76,13 @@ def image_classification(
     """
     # Always use the same random seed for the dataset
     train_dataset, val_dataset = framework.load_dataset(
-        train_path, val_path, num_classes, batch_size, input_shape, 42
+        train_path, val_path, num_classes, batch_size, dataset_shape, training_shape, 42
     )
 
     """
     ## Create the model
     """
-    model = framework.load_model(model_name, input_shape, num_classes)
+    model = framework.load_model(model_name, training_shape, num_classes)
 
     """
     ## Create the base name for the log and model files

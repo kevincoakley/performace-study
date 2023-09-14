@@ -271,10 +271,10 @@ class Tensorflow:
         loss = tf.keras.losses.categorical_crossentropy(labels, predictions)
         validation_loss = np.sum(loss.numpy()) / len(loss.numpy())
 
-        # Use sklearn to calculate the validation score
-        validation_score = accuracy_score(y_true, y_pred)
+        # Use sklearn to calculate the validation accuracy
+        validation_accuracy = accuracy_score(y_true, y_pred)
 
-        return [validation_loss, validation_score]
+        return [validation_loss, validation_accuracy]
 
     def save(self, model, model_path):
         model.save(model_path)

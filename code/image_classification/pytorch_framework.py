@@ -31,7 +31,7 @@ class Pytorch:
         data_generator = torch.Generator()
         data_generator.manual_seed(dataset_seed_val)
 
-        transform = torchvision.transforms.Compose(
+        preprocessing = torchvision.transforms.Compose(
             [
                 torchvision.transforms.ToTensor(),
                 torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
@@ -43,7 +43,7 @@ class Pytorch:
             ]
         )
 
-        transform_augment = torchvision.transforms.Compose(
+        preprocessing_augmentation = torchvision.transforms.Compose(
             [
                 torchvision.transforms.ToTensor(),
                 torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
@@ -58,15 +58,13 @@ class Pytorch:
             ]
         )
 
-        train_dataset = torchvision.datasets.ImageFolder(
-            root=train_path, transform=transform_augment
+        train = torchvision.datasets.ImageFolder(
+            root=train_path, transform=preprocessing_augmentation
         )
-        val_dataset = torchvision.datasets.ImageFolder(
-            root=val_path, transform=transform
-        )
+        val = torchvision.datasets.ImageFolder(root=val_path, transform=preprocessing)
 
-        train_dataloader = torch.utils.data.DataLoader(
-            train_dataset,
+        train_dataset = torch.utils.data.DataLoader(
+            train,
             batch_size=batch_size,
             shuffle=True,
             drop_last=True,
@@ -75,8 +73,8 @@ class Pytorch:
             pin_memory=True,
         )
 
-        val_dataloader = torch.utils.data.DataLoader(
-            val_dataset,
+        val_dataset = torch.utils.data.DataLoader(
+            val,
             batch_size=batch_size,
             shuffle=False,
             num_workers=1,
@@ -84,7 +82,7 @@ class Pytorch:
             pin_memory=True,
         )
 
-        return train_dataloader, val_dataloader
+        return train_dataset, val_dataset
 
     def load_model(self, model_name, training_shape, num_classes):
         model_dictionary = {
@@ -354,6 +352,7 @@ class Pytorch:
 
         # Calucate the validation loss by dividing the total loss by number of batches
         validation_loss = loss.item() / len(dataloader)
+
         # Use sklearn to calculate the validation accuracy
         validation_accuracy = accuracy_score(running_labels, running_predicted)
 

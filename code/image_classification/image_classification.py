@@ -90,7 +90,7 @@ def image_classification(
     base_name = os.path.basename(sys.argv[0]).split(".")[0]
 
     if len(run_name) >= 1:
-        base_name = base_name + "_" + run_name
+        base_name = run_name
 
     """
     ## Train the model
@@ -129,7 +129,20 @@ def image_classification(
     """
     ## Evaluate the trained model and save the predictions
     """
-    predictions_csv_file = base_name + "_predictions_seed_" + str(seed_val) + ".csv"
+    prediction_path = ""
+
+    if save_predictions:
+        if os.path.exists("predictions/") == False:
+            os.mkdir("predictions/")
+
+        prediction_path = "predictions/"
+
+        if run_name != "":
+            if os.path.exists("predictions/" + run_name + "/") == False:
+                os.mkdir("predictions/" + run_name + "/")
+            prediction_path = "predictions/" + run_name + "/"
+
+    predictions_csv_file = prediction_path + base_name + "_seed_" + str(seed_val) + ".csv"
 
     score = framework.evaluate(
         trained_model, val_dataset, save_predictions, predictions_csv_file
@@ -167,15 +180,13 @@ def image_classification(
     return score[0], score[1], training_time
 
 
-def get_system_info():
+def get_system_info(filename):
     if os.path.exists("system_info.py"):
-        base_name = os.path.basename(sys.argv[0]).split(".")[0]
-
         import system_info
 
         sysinfo = system_info.get_system_info()
 
-        with open("%s.yaml" % base_name, "w") as system_info_file:
+        with open("%s.yaml" % filename, "w") as system_info_file:
             yaml.dump(sysinfo, system_info_file, default_flow_style=False)
 
         return sysinfo
@@ -194,6 +205,7 @@ def save_score(
     dataset_name,
     deterministic,
     seed_val,
+    filename,
     run_name="",
 ):
     if machine_learning_framework == "TensorFlow":
@@ -205,7 +217,7 @@ def save_score(
 
         framework = Pytorch()
 
-    csv_file = os.path.basename(sys.argv[0]).split(".")[0] + ".csv"
+    csv_file = filename + ".csv"
     write_header = False
 
     # If determistic is false and the seed value is 1 then the
@@ -312,6 +324,14 @@ def parse_arguments(args):
     )
 
     parser.add_argument(
+        "--save-filename",
+        dest="save_filename",
+        help="filename used to save the results",
+        type=str,
+        default=str(os.path.basename(sys.argv[0]).split(".")[0]),
+    )
+
+    parser.add_argument(
         "--save-model", dest="save_model", help="Save the model", action="store_true"
     )
 
@@ -374,7 +394,9 @@ def parse_arguments(args):
 if __name__ == "__main__":
     args = parse_arguments(sys.argv[1:])
 
-    system_info = get_system_info()
+    save_filename = args.save_filename
+
+    system_info = get_system_info(save_filename)
     seed_val = args.seed_val
 
     for x in range(args.num_runs):
@@ -417,5 +439,6 @@ if __name__ == "__main__":
             dataset_name=args.dataset_name,
             deterministic=args.deterministic,
             seed_val=seed_val,
+            filename=save_filename,
             run_name=args.run_name,
         )

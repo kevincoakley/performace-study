@@ -280,4 +280,6 @@ class Tensorflow:
         model.save(model_path)
 
     def load(self, model_path):
-        pass
+        model = tf.keras.models.load_model(model_path)
+
+        return model

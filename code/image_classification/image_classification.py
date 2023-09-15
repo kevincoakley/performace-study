@@ -142,7 +142,9 @@ def image_classification(
                 os.mkdir("predictions/" + run_name + "/")
             prediction_path = "predictions/" + run_name + "/"
 
-    predictions_csv_file = prediction_path + base_name + "_seed_" + str(seed_val) + ".csv"
+    predictions_csv_file = (
+        prediction_path + base_name + "_seed_" + str(seed_val) + ".csv"
+    )
 
     score = framework.evaluate(
         trained_model, val_dataset, save_predictions, predictions_csv_file

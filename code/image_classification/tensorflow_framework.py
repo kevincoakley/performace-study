@@ -36,22 +36,26 @@ class Tensorflow:
 
     def load_dataset(
         self,
-        train_path,
-        val_path,
-        num_classes,
-        batch_size,
-        dataset_shape,
-        training_shape,
+        dataset_details,
         dataset_seed_val,
     ):
+        train_path = dataset_details["train_path"]
+        val_path = dataset_details["val_path"]
+        num_classes = dataset_details["num_classes"]
+        dataset_shape = dataset_details["dataset_shape"]
+        training_shape = dataset_details["training_shape"]
+        batch_size = dataset_details["batch_size"]
+        normalization_mean = dataset_details["normalization"]["mean"]
+        normalization_std = dataset_details["normalization"]["std"]
+
         def preprocessing(image, label):
             image = tf.cast(image, tf.float32)
             # Normalize the pixel values ((input[channel] - mean[channel]) / std[channel])
             image = tf.divide(
                 image, (255.0, 255.0, 255.0)
             )  # divide by 255 to match pytorch
-            image = tf.subtract(image, (0.5, 0.5, 0.5))
-            image = tf.divide(image, (0.5, 0.5, 0.5))
+            image = tf.subtract(image, normalization_mean)
+            image = tf.divide(image, normalization_std)
             image = tf.image.resize(
                 image, training_shape[:2], antialias=False, method="nearest"
             )
@@ -103,7 +107,10 @@ class Tensorflow:
 
         return train_dataset, val_dataset
 
-    def load_model(self, model_name, training_shape, num_classes):
+    def load_model(self, model_name, dataset_details):
+        num_classes = dataset_details["num_classes"]
+        training_shape = dataset_details["training_shape"]
+
         model_dictionary = {
             "EfficientNetB4": {
                 "application": tf.keras.applications.EfficientNetB4,

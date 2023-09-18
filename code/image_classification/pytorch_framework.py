@@ -18,23 +18,21 @@ class Pytorch:
         np.random.seed(seed_val)
         torch.use_deterministic_algorithms(True)
 
-    def load_dataset(
-        self,
-        train_path,
-        val_path,
-        num_classes,
-        batch_size,
-        dataset_shape,
-        training_shape,
-        dataset_seed_val,
-    ):
+    def load_dataset(self, dataset_details, dataset_seed_val):
+        train_path = dataset_details["train_path"]
+        val_path = dataset_details["val_path"]
+        training_shape = dataset_details["training_shape"]
+        batch_size = dataset_details["batch_size"]
+        normalization_mean = dataset_details["normalization"]["mean"]
+        normalization_std = dataset_details["normalization"]["std"]
+
         data_generator = torch.Generator()
         data_generator.manual_seed(dataset_seed_val)
 
         preprocessing = torchvision.transforms.Compose(
             [
                 torchvision.transforms.ToTensor(),
-                torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                torchvision.transforms.Normalize(normalization_mean, normalization_std),
                 torchvision.transforms.Resize(
                     training_shape[:2],
                     antialias=False,
@@ -46,7 +44,7 @@ class Pytorch:
         preprocessing_augmentation = torchvision.transforms.Compose(
             [
                 torchvision.transforms.ToTensor(),
-                torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                torchvision.transforms.Normalize(normalization_mean, normalization_std),
                 torchvision.transforms.Resize(
                     training_shape[:2],
                     antialias=False,
@@ -84,7 +82,9 @@ class Pytorch:
 
         return train_dataset, val_dataset
 
-    def load_model(self, model_name, training_shape, num_classes):
+    def load_model(self, model_name, dataset_details):
+        num_classes = dataset_details["num_classes"]
+
         model_dictionary = {
             "EfficientNetB4": {
                 "application": torchvision.models.efficientnet_b4,

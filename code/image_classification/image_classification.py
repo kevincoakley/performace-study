@@ -45,6 +45,10 @@ def image_classification(
             "dataset_shape": (32, 32, 3),
             "training_shape": (128, 128, 3),
             "batch_size": 32,
+            "normalization": {
+                "mean": (0.5071, 0.4865, 0.4409),
+                "std": (0.2673, 0.2564, 0.2762),
+            },
         },
         "cifar10": {
             "train_path": "./cifar10/train/",
@@ -53,6 +57,10 @@ def image_classification(
             "dataset_shape": (32, 32, 3),
             "training_shape": (128, 128, 3),
             "batch_size": 32,
+            "normalization": {
+                "mean": (0.4914, 0.4822, 0.4465),
+                "std": (0.247, 0.2435, 0.2616),
+            },
         },
         "cats_vs_dogs": {
             "train_path": "./cats_vs_dogs/train/",
@@ -61,6 +69,11 @@ def image_classification(
             "dataset_shape": (128, 128, 3),
             "training_shape": (128, 128, 3),
             "batch_size": 32,
+            # Normalization done on images resized to 128x128
+            "normalization": {
+                "mean": (0.4872, 0.4544, 0.4165),
+                "std": (0.2622, 0.256, 0.2584),
+            },
         },
     }
 
@@ -75,14 +88,12 @@ def image_classification(
     ## Load the dataset
     """
     # Always use the same random seed for the dataset
-    train_dataset, val_dataset = framework.load_dataset(
-        train_path, val_path, num_classes, batch_size, dataset_shape, training_shape, 42
-    )
+    train_dataset, val_dataset = framework.load_dataset(datasets[dataset_name], 42)
 
     """
     ## Create the model
     """
-    model = framework.load_model(model_name, training_shape, num_classes)
+    model = framework.load_model(model_name, datasets[dataset_name])
 
     """
     ## Create the base name for the log and model files

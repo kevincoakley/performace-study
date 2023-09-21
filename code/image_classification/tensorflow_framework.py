@@ -90,8 +90,7 @@ class Tensorflow:
             train.map(preprocessing)
             .map(augmentation)
             .shuffle(10000, seed=dataset_seed_val)
-            .batch(batch_size, drop_remainder=True)
-            .repeat()
+            .batch(batch_size)
             .prefetch(tf.data.AUTOTUNE)
         )
 

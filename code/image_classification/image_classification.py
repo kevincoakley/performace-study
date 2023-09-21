@@ -77,13 +77,6 @@ def image_classification(
         },
     }
 
-    train_path = datasets[dataset_name]["train_path"]
-    val_path = datasets[dataset_name]["val_path"]
-    dataset_shape = datasets[dataset_name]["dataset_shape"]
-    training_shape = datasets[dataset_name]["training_shape"]
-    num_classes = datasets[dataset_name]["num_classes"]
-    batch_size = datasets[dataset_name]["batch_size"]
-
     """
     ## Load the dataset
     """

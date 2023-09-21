@@ -8,8 +8,6 @@ from sklearn.metrics import accuracy_score
 class Tensorflow:
     def __init__(self):
         self.version = tf.version.VERSION
-        self.train_steps_per_epoch = None
-        self.val_steps_per_epoch = None
 
     def deterministic(self, seed_val):
         """
@@ -53,7 +51,7 @@ class Tensorflow:
             # Normalize the pixel values ((input[channel] - mean[channel]) / std[channel])
             image = tf.divide(
                 image, (255.0, 255.0, 255.0)
-            )  # divide by 255 to match pytorch
+            )  # divide by 255 so the image values are in [0 - 1] range
             image = tf.subtract(image, normalization_mean)
             image = tf.divide(image, normalization_std)
             image = tf.image.resize(
@@ -61,12 +59,18 @@ class Tensorflow:
             )
             return image, tf.squeeze(tf.one_hot(label, depth=num_classes))
 
+        rng = tf.random.Generator.from_seed(dataset_seed_val, alg="philox")
+
         def augmentation(image, label):
+            # Select a different random seed for each epoch
+            seed = rng.make_seeds(2)[0]
             image = tf.image.resize_with_crop_or_pad(
                 image, training_shape[0] + 20, training_shape[1] + 20
             )
-            image = tf.image.random_crop(image, training_shape)
-            image = tf.image.random_flip_left_right(image)
+            image = tf.image.stateless_random_crop(
+                image, size=training_shape, seed=seed
+            )
+            image = tf.image.stateless_random_flip_left_right(image, seed=seed)
             return image, label
 
         # Get the training and validation datasets from the directory
@@ -98,11 +102,6 @@ class Tensorflow:
         val_dataset = (
             val.map(preprocessing).batch(batch_size).prefetch(tf.data.AUTOTUNE)
         )
-
-        # Calculate the number of steps per epoch by dividing the number of images in
-        # the dataset by the batch size
-        self.train_steps_per_epoch = len(list(train)) // batch_size
-        self.val_steps_per_epoch = len(list(val)) // batch_size
 
         return train_dataset, val_dataset
 
@@ -234,7 +233,6 @@ class Tensorflow:
         model.fit(
             train_dataset,
             epochs=epochs,
-            steps_per_epoch=self.train_steps_per_epoch,
             validation_data=val_dataset,
             callbacks=callbacks,
         )

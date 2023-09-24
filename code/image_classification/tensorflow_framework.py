@@ -59,7 +59,7 @@ class Tensorflow:
             image = tf.image.resize(
                 image, training_shape[:2], antialias=False, method="nearest"
             )
-            return image, tf.squeeze(tf.one_hot(label, depth=num_classes))
+            return image, label
 
         def augmentation(image, label):
             image = tf.image.resize_with_crop_or_pad(
@@ -215,7 +215,7 @@ class Tensorflow:
     ):
         model.compile(
             optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
-            loss="categorical_crossentropy",
+            loss=tf.keras.losses.SparseCategoricalCrossentropy(),
             metrics=["accuracy"],
         )
 
@@ -253,7 +253,7 @@ class Tensorflow:
         labels = np.asarray(list(val_dataset.map(lambda x, y: y)))
 
         # Get the index to the highest probability
-        y_true = np.argmax(labels, axis=1)
+        y_true = labels
         y_pred = np.argmax(predictions, axis=1)
 
         if save_predictions:
@@ -274,9 +274,9 @@ class Tensorflow:
                 writer.writerow(csv_columns)
                 writer.writerows(csv_output_array.tolist())
 
-        # Calucate the validation loss by averaging the loss of all the samples
-        loss = tf.keras.losses.categorical_crossentropy(labels, predictions)
-        validation_loss = np.sum(loss.numpy()) / len(loss.numpy())
+        # Calucate the validation loss
+        loss = tf.keras.losses.SparseCategoricalCrossentropy()
+        validation_loss = loss(labels, predictions).numpy()
 
         # Use sklearn to calculate the validation accuracy
         validation_accuracy = accuracy_score(y_true, y_pred)

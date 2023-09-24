@@ -65,6 +65,7 @@ class Pytorch:
             train,
             batch_size=batch_size,
             shuffle=True,
+            drop_last=True,
             num_workers=1,
             generator=data_generator,
             pin_memory=True,

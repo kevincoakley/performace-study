@@ -8,6 +8,8 @@ from sklearn.metrics import accuracy_score
 class Tensorflow:
     def __init__(self):
         self.version = tf.version.VERSION
+        self.train_steps_per_epoch = None
+        self.val_steps_per_epoch = None
 
     def deterministic(self, seed_val):
         """
@@ -59,18 +61,12 @@ class Tensorflow:
             )
             return image, tf.squeeze(tf.one_hot(label, depth=num_classes))
 
-        rng = tf.random.Generator.from_seed(dataset_seed_val, alg="philox")
-
         def augmentation(image, label):
-            # Select a different random seed for each epoch
-            seed = rng.make_seeds(2)[0]
             image = tf.image.resize_with_crop_or_pad(
                 image, training_shape[0] + 20, training_shape[1] + 20
             )
-            image = tf.image.stateless_random_crop(
-                image, size=training_shape, seed=seed
-            )
-            image = tf.image.stateless_random_flip_left_right(image, seed=seed)
+            image = tf.image.random_crop(image, training_shape)
+            image = tf.image.random_flip_left_right(image)
             return image, label
 
         # Get the training and validation datasets from the directory
@@ -94,7 +90,8 @@ class Tensorflow:
             train.map(preprocessing)
             .map(augmentation)
             .shuffle(10000, seed=dataset_seed_val)
-            .batch(batch_size)
+            .batch(batch_size, drop_remainder=True)
+            .repeat()
             .prefetch(tf.data.AUTOTUNE)
         )
 
@@ -102,6 +99,11 @@ class Tensorflow:
         val_dataset = (
             val.map(preprocessing).batch(batch_size).prefetch(tf.data.AUTOTUNE)
         )
+
+        # Calculate the number of steps per epoch by dividing the number of images in
+        # the dataset by the batch size
+        self.train_steps_per_epoch = len(list(train)) // batch_size
+        self.val_steps_per_epoch = len(list(val)) // batch_size
 
         return train_dataset, val_dataset
 
@@ -233,6 +235,7 @@ class Tensorflow:
         model.fit(
             train_dataset,
             epochs=epochs,
+            steps_per_epoch=self.train_steps_per_epoch,
             validation_data=val_dataset,
             callbacks=callbacks,
         )

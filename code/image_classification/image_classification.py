@@ -5,35 +5,7 @@ from datetime import datetime
 script_version = "2.0.0"
 
 
-def image_classification(
-    run_number,
-    machine_learning_framework="TensorFlow",
-    model_name="Densenet",
-    dataset_name="cifar10",
-    deterministic=False,
-    epochs=50,
-    learning_rate=4e-4,
-    seed_val=1,
-    run_name="",
-    save_model=False,
-    save_predictions=False,
-    save_epoch_logs=False,
-):
-    if machine_learning_framework == "TensorFlow":
-        from tensorflow_framework import Tensorflow
-
-        framework = Tensorflow()
-    elif machine_learning_framework == "PyTorch":
-        from pytorch_framework import Pytorch
-
-        framework = Pytorch()
-
-    if deterministic or seed_val != 1:
-        """
-        ## Configure framework for fixed seed runs
-        """
-        framework.deterministic(seed_val)
-
+def get_dataset_details(dataset_name):
     """
     ## Datasets definition dictionary
     """
@@ -77,16 +49,53 @@ def image_classification(
         },
     }
 
+    return datasets[dataset_name]
+
+
+def image_classification(
+    run_number,
+    machine_learning_framework="TensorFlow",
+    model_name="Densenet",
+    dataset_name="cifar10",
+    deterministic=False,
+    epochs=50,
+    learning_rate=4e-4,
+    seed_val=1,
+    run_name="",
+    save_model=False,
+    save_predictions=False,
+    save_epoch_logs=False,
+):
+    if machine_learning_framework == "TensorFlow":
+        from tensorflow_framework import Tensorflow
+
+        framework = Tensorflow()
+    elif machine_learning_framework == "PyTorch":
+        from pytorch_framework import Pytorch
+
+        framework = Pytorch()
+
+    if deterministic or seed_val != 1:
+        """
+        ## Configure framework for fixed seed runs
+        """
+        framework.deterministic(seed_val)
+
+    """
+    ## Get the dataset details
+    """
+    dataset_details = get_dataset_details(dataset_name)
+
     """
     ## Load the dataset
     """
     # Always use the same random seed for the dataset
-    train_dataset, val_dataset = framework.load_dataset(datasets[dataset_name], 42)
+    train_dataset, val_dataset = framework.load_dataset(dataset_details, 42)
 
     """
     ## Create the model
     """
-    model = framework.load_model(model_name, datasets[dataset_name])
+    model = framework.load_model(model_name, dataset_details)
 
     """
     ## Create the base name for the log and model files
@@ -129,6 +138,15 @@ def image_classification(
     # Calculate the training time
     end_time = datetime.now()
     training_time = end_time - start_time
+
+    """
+    ## Reset the deterministic configuration before evaluating the model
+    """
+    if deterministic or seed_val != 1:
+        """
+        ## Configure framework for fixed seed runs
+        """
+        framework.deterministic(seed_val)
 
     """
     ## Evaluate the trained model and save the predictions
@@ -181,7 +199,7 @@ def image_classification(
         elif machine_learning_framework == "PyTorch":
             model_path = model_path + ".pth"
 
-        framework.save(model, model_path)
+        framework.save(trained_model, model_path)
 
     return score[0], score[1], training_time
 

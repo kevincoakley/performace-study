@@ -8,8 +8,6 @@ from sklearn.metrics import accuracy_score
 class Tensorflow:
     def __init__(self):
         self.version = tf.version.VERSION
-        self.train_steps_per_epoch = None
-        self.val_steps_per_epoch = None
 
     def deterministic(self, seed_val):
         """
@@ -41,33 +39,8 @@ class Tensorflow:
     ):
         train_path = dataset_details["train_path"]
         val_path = dataset_details["val_path"]
-        num_classes = dataset_details["num_classes"]
         dataset_shape = dataset_details["dataset_shape"]
-        training_shape = dataset_details["training_shape"]
         batch_size = dataset_details["batch_size"]
-        normalization_mean = dataset_details["normalization"]["mean"]
-        normalization_std = dataset_details["normalization"]["std"]
-
-        def preprocessing(image, label):
-            image = tf.cast(image, tf.float32)
-            # Normalize the pixel values ((input[channel] - mean[channel]) / std[channel])
-            image = tf.divide(
-                image, (255.0, 255.0, 255.0)
-            )  # divide by 255 so the image values are in [0 - 1] range
-            image = tf.subtract(image, normalization_mean)
-            image = tf.divide(image, normalization_std)
-            image = tf.image.resize(
-                image, training_shape[:2], antialias=False, method="nearest"
-            )
-            return image, label
-
-        def augmentation(image, label):
-            image = tf.image.resize_with_crop_or_pad(
-                image, training_shape[0] + 20, training_shape[1] + 20
-            )
-            image = tf.image.random_crop(image, training_shape)
-            image = tf.image.random_flip_left_right(image)
-            return image, label
 
         # Get the training and validation datasets from the directory
         train = tf.keras.utils.image_dataset_from_directory(
@@ -85,31 +58,17 @@ class Tensorflow:
             batch_size=None,
         )
 
-        # Preprocess and augment the train dataset
-        train_dataset = (
-            train.map(preprocessing)
-            .map(augmentation)
-            .shuffle(10000, seed=dataset_seed_val)
-            .batch(batch_size, drop_remainder=True)
-            .repeat()
-            .prefetch(tf.data.AUTOTUNE)
-        )
-
-        # Only preprocess the validation dataset
-        val_dataset = (
-            val.map(preprocessing).batch(batch_size).prefetch(tf.data.AUTOTUNE)
-        )
-
-        # Calculate the number of steps per epoch by dividing the number of images in
-        # the dataset by the batch size
-        self.train_steps_per_epoch = len(list(train)) // batch_size
-        self.val_steps_per_epoch = len(list(val)) // batch_size
+        # Batch and prefetch the dataset
+        train_dataset = train.batch(batch_size).prefetch(tf.data.AUTOTUNE)
+        val_dataset = val.batch(batch_size).prefetch(tf.data.AUTOTUNE)
 
         return train_dataset, val_dataset
 
     def load_model(self, model_name, dataset_details):
         num_classes = dataset_details["num_classes"]
         training_shape = dataset_details["training_shape"]
+        normalization_mean = dataset_details["normalization"]["mean"]
+        normalization_std = dataset_details["normalization"]["std"]
 
         model_dictionary = {
             "EfficientNetB4": {
@@ -194,11 +153,39 @@ class Tensorflow:
             },
         }
 
+        preprocessing = tf.keras.Sequential(
+            [
+                tf.keras.layers.Rescaling(1.0 / 255),
+                tf.keras.layers.Normalization(
+                    mean=normalization_mean, variance=np.square(normalization_std)
+                ),
+                tf.keras.layers.Resizing(
+                    training_shape[0], training_shape[1], interpolation="nearest"
+                ),
+            ],
+            name="preprocessing",
+        )
+
+        data_augmentation = tf.keras.Sequential(
+            [
+                tf.keras.layers.ZeroPadding2D(10),
+                tf.keras.layers.RandomCrop(training_shape[0], training_shape[1]),
+                tf.keras.layers.RandomFlip("horizontal"),
+            ],
+            name="data_augmentation",
+        )
+
+        application = model_dictionary[model_name]["application"](
+            **model_dictionary[model_name]["args"]
+        )
+
         model = tf.keras.Sequential()
-        model.add(
-            model_dictionary[model_name]["application"](
-                **model_dictionary[model_name]["args"]
-            )
+        model.add(preprocessing)
+        model.add(data_augmentation)
+        model.add(application)
+
+        model.build(
+            input_shape=(None, training_shape[0], training_shape[1], training_shape[2])
         )
 
         return model
@@ -235,7 +222,6 @@ class Tensorflow:
         model.fit(
             train_dataset,
             epochs=epochs,
-            steps_per_epoch=self.train_steps_per_epoch,
             validation_data=val_dataset,
             callbacks=callbacks,
         )

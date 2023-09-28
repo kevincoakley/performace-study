@@ -1,6 +1,9 @@
 import torch
 import torchvision
 
+torchvision.disable_beta_transforms_warning()
+from torchvision.transforms import v2
+
 import csv, random
 import numpy as np
 from sklearn.metrics import accuracy_score
@@ -21,51 +24,26 @@ class Pytorch:
     def load_dataset(self, dataset_details, dataset_seed_val):
         train_path = dataset_details["train_path"]
         val_path = dataset_details["val_path"]
-        training_shape = dataset_details["training_shape"]
         batch_size = dataset_details["batch_size"]
-        normalization_mean = dataset_details["normalization"]["mean"]
-        normalization_std = dataset_details["normalization"]["std"]
 
         data_generator = torch.Generator()
         data_generator.manual_seed(dataset_seed_val)
 
-        preprocessing = torchvision.transforms.Compose(
-            [
-                torchvision.transforms.ToTensor(),
-                torchvision.transforms.Normalize(normalization_mean, normalization_std),
-                torchvision.transforms.Resize(
-                    training_shape[:2],
-                    antialias=False,
-                    interpolation=torchvision.transforms.InterpolationMode.NEAREST,
-                ),
-            ]
-        )
-
-        preprocessing_augmentation = torchvision.transforms.Compose(
-            [
-                torchvision.transforms.ToTensor(),
-                torchvision.transforms.Normalize(normalization_mean, normalization_std),
-                torchvision.transforms.Resize(
-                    training_shape[:2],
-                    antialias=False,
-                    interpolation=torchvision.transforms.InterpolationMode.NEAREST,
-                ),
-                torchvision.transforms.Pad(10),
-                torchvision.transforms.RandomCrop(training_shape[:2]),
-                torchvision.transforms.RandomHorizontalFlip(),
-            ]
+        transform_to_tensor = torchvision.transforms.Compose(
+            [torchvision.transforms.ToTensor()]
         )
 
         train = torchvision.datasets.ImageFolder(
-            root=train_path, transform=preprocessing_augmentation
+            root=train_path, transform=transform_to_tensor
         )
-        val = torchvision.datasets.ImageFolder(root=val_path, transform=preprocessing)
+        val = torchvision.datasets.ImageFolder(
+            root=val_path, transform=transform_to_tensor
+        )
 
         train_dataset = torch.utils.data.DataLoader(
             train,
             batch_size=batch_size,
             shuffle=True,
-            drop_last=True,
             num_workers=1,
             generator=data_generator,
             pin_memory=True,
@@ -84,6 +62,9 @@ class Pytorch:
 
     def load_model(self, model_name, dataset_details):
         num_classes = dataset_details["num_classes"]
+        training_shape = dataset_details["training_shape"]
+        normalization_mean = dataset_details["normalization"]["mean"]
+        normalization_std = dataset_details["normalization"]["std"]
 
         model_dictionary = {
             "EfficientNetB4": {
@@ -144,9 +125,29 @@ class Pytorch:
             },
         }
 
-        model = model_dictionary[model_name]["application"](
+        preprocessing = torch.nn.Sequential(
+            torchvision.transforms.v2.Normalize(normalization_mean, normalization_std),
+            torchvision.transforms.v2.Resize(
+                training_shape[:2],
+                antialias=False,
+                interpolation=torchvision.transforms.InterpolationMode.NEAREST,
+            ),
+        )
+        augmentation = torch.nn.Sequential(
+            torchvision.transforms.v2.Pad(10),
+            torchvision.transforms.v2.RandomCrop(training_shape[:2]),
+            torchvision.transforms.v2.RandomHorizontalFlip(),
+        )
+
+        application = model_dictionary[model_name]["application"](
             **model_dictionary[model_name]["args"]
         )
+
+        model = torch.nn.Sequential()
+        model.add_module("preprocessing", preprocessing)
+        model.add_module("augmentation", augmentation)
+        model.add_module("application", application)
+
         model.to(self.device)
 
         return model

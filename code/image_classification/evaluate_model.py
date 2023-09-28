@@ -1,4 +1,5 @@
 import argparse, pathlib, sys
+import image_classification
 
 script_version = "2.0.0"
 
@@ -75,49 +76,15 @@ if __name__ == "__main__":
     framework.deterministic(seed_val)
 
     """
-    ## Datasets definition dictionary
+    ## Get the dataset details
     """
-    datasets = {
-        "cifar100": {
-            "train_path": "./cifar100/train/",
-            "val_path": "./cifar100/test/",
-            "num_classes": 100,
-            "dataset_shape": (32, 32, 3),
-            "training_shape": (128, 128, 3),
-            "batch_size": 32,
-        },
-        "cifar10": {
-            "train_path": "./cifar10/train/",
-            "val_path": "./cifar10/test/",
-            "num_classes": 10,
-            "dataset_shape": (32, 32, 3),
-            "training_shape": (128, 128, 3),
-            "batch_size": 32,
-        },
-        "cats_vs_dogs": {
-            "train_path": "./cats_vs_dogs/train/",
-            "val_path": "./cats_vs_dogs/test/",
-            "num_classes": 2,
-            "dataset_shape": (128, 128, 3),
-            "training_shape": (128, 128, 3),
-            "batch_size": 32,
-        },
-    }
-
-    train_path = datasets[dataset_name]["train_path"]
-    val_path = datasets[dataset_name]["val_path"]
-    dataset_shape = datasets[dataset_name]["dataset_shape"]
-    training_shape = datasets[dataset_name]["training_shape"]
-    num_classes = datasets[dataset_name]["num_classes"]
-    batch_size = datasets[dataset_name]["batch_size"]
+    dataset_detail = image_classification.get_dataset_details(dataset_name)
 
     """
     ## Load the dataset
     """
     # Always use the same random seed for the dataset
-    train_dataset, val_dataset = framework.load_dataset(
-        train_path, val_path, num_classes, batch_size, dataset_shape, training_shape, 42
-    )
+    train_dataset, val_dataset = framework.load_dataset(dataset_detail, 42)
 
     """
     ## Load the model

@@ -150,6 +150,9 @@ class Pytorch:
 
         model.to(self.device)
 
+        total_params = sum(p.numel() for p in model.parameters())
+        print(f"Number of parameters: {total_params}")
+
         return model
 
     def train(
@@ -164,7 +167,7 @@ class Pytorch:
     ):
         epoch_logs = []
 
-        loss_function = torch.nn.CrossEntropyLoss()
+        criterion = torch.nn.CrossEntropyLoss()
 
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
@@ -173,20 +176,19 @@ class Pytorch:
             running_predicted = []
             running_labels = []
 
-            batch_epoch_loss = 0.0
+            model.train()
 
-            # Loop through the training dataset by batches
-            for i, data in enumerate(train_dataloader, 0):
-                # Every data instance is an input + label pair
-                inputs, labels = data[0].to(self.device), data[1].to(self.device)
+            # Loop through the training dataset and train the model
+            for i, (input, label) in enumerate(train_dataloader, 0):
+                input, label = input.to(self.device), label.to(self.device)
+
+                output = model(input)
+                loss = criterion(output, label)
 
                 # Zero your gradients every batch
                 optimizer.zero_grad()
 
-                # Make predictions for this batch
-                outputs = model(inputs)
                 # Compute the loss and its gradients
-                loss = loss_function(outputs, labels)
                 loss.backward()
                 # Adjust learning weights
                 optimizer.step()
@@ -194,23 +196,12 @@ class Pytorch:
                 # Store the running loss for the training dataset
                 running_loss += loss
 
-                # Store the batch predicted values for the training dataset
-                _, predicted = torch.max(outputs.data, 1)
-                running_predicted.extend(predicted.tolist())
-                running_labels.extend(labels.tolist())
+                # Select the largest prediction value for each class
+                _, predicted = torch.max(output.data, 1)
 
-                # Report the accuracy and loss every 250 batches
-                if i % 250 == 249:
-                    # loss per batch
-                    batch_epoch_loss = running_loss.item() / i
-                    print(
-                        "     batch %s loss: %s accuracy: %s"
-                        % (
-                            i + 1,
-                            batch_epoch_loss,
-                            accuracy_score(running_labels, running_predicted),
-                        )
-                    )
+                # Store the batch predicted values for the training dataset
+                running_predicted.extend(predicted.tolist())
+                running_labels.extend(label.tolist())
 
             # Calucate the training loss by dividing the total loss by number of batches
             epoch_loss = running_loss.item() / len(train_dataloader)
@@ -225,40 +216,12 @@ class Pytorch:
 
             start_time = datetime.now()
 
-            # Make sure gradient tracking is on, and do a pass over the data
-            model.train(True)
+            # Train the model for one epoch
             train_loss, train_accuracy = train_one_epoch()
 
-            # Set the model to evaluation mode, disabling dropout and using population
-            # statistics for batch normalization.
-            model.eval()
-
-            running_val_loss = 0.0
-            running_val_predicted = []
-            running_val_labels = []
-
-            # Disable gradient computation and reduce memory consumption.
-            with torch.no_grad():
-                for i, val_data in enumerate(val_dataloader, 0):
-                    val_inputs, val_labels = val_data[0].to(self.device), val_data[
-                        1
-                    ].to(self.device)
-
-                    val_outputs = model(val_inputs)
-
-                    # Calculate the batch loss for the val dataset
-                    running_val_loss += loss_function(val_outputs, val_labels)
-
-                    # Calculate the batch predicted values for the val dataset
-                    _, val_predicted = torch.max(val_outputs.data, 1)
-                    running_val_predicted.extend(val_predicted.tolist())
-                    running_val_labels.extend(val_labels.tolist())
-
-            # Calucate the validation loss by dividing the total loss by number of batches
-            validation_loss = running_val_loss.item() / len(val_dataloader)
-            # Use sklearn to calculate the validation accuracy
-            validation_accuracy = accuracy_score(
-                running_val_labels, running_val_predicted
+            # Evaluate the model on the validation dataset after each epoch
+            validation_loss, validation_accuracy = self.evaluate(
+                model, val_dataloader, save_predictions=False, predictions_csv_file=None
             )
 
             # Calculate the epoch time
@@ -303,28 +266,31 @@ class Pytorch:
     def evaluate(
         self, model, dataloader, save_predictions=False, predictions_csv_file=None
     ):
-        loss_function = torch.nn.CrossEntropyLoss()
+        criterion = torch.nn.CrossEntropyLoss()
         loss = 0
 
         running_predicted = []
         running_labels = []
         predictions = []
 
-        # Forward pass only. Get the predictions and calculate the loss and accuarcy
-        with torch.no_grad():
+        model.eval()
+
+        with torch.inference_mode():
             for data in dataloader:
                 # Get the images and labels from the dataloader
-                images, labels = data[0].to(self.device), data[1].to(self.device)
+                input = data[0].to(self.device, non_blocking=True)
+                labels = data[1].to(self.device, non_blocking=True)
 
                 # Calculate the prediction values for each image
-                outputs = model(images)
+                outputs = model(input)
 
                 # Calculate the loss for the batch
-                loss += loss_function(outputs, labels)
+                loss += criterion(outputs, labels)
 
                 # Select the largest prediction value for each class
                 _, predicted = torch.max(outputs.data, 1)
 
+                # Store the batch predicted values for the dataset
                 running_predicted.extend(predicted.tolist())
                 running_labels.extend(labels.tolist())
 

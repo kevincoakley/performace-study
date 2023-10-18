@@ -4,6 +4,8 @@ import csv, random
 import numpy as np
 from sklearn.metrics import accuracy_score
 
+import resnet_tensorflow as resnet
+
 
 class Tensorflow:
     def __init__(self):
@@ -41,6 +43,26 @@ class Tensorflow:
         val_path = dataset_details["val_path"]
         dataset_shape = dataset_details["dataset_shape"]
         batch_size = dataset_details["batch_size"]
+        normalization_mean = dataset_details["normalization"]["mean"]
+        normalization_std = dataset_details["normalization"]["std"]
+
+        def preprocessing(image, label):
+            image = tf.cast(image, tf.float32)
+            # Normalize the pixel values ((input[channel] - mean[channel]) / std[channel])
+            image = tf.divide(
+                image, (255.0, 255.0, 255.0)
+            )  # divide by 255 to match pytorch
+            image = tf.subtract(image, normalization_mean)
+            image = tf.divide(image, normalization_std)
+            return image, label
+
+        def augmentation(image, label):
+            image = tf.image.resize_with_crop_or_pad(
+                image, dataset_shape[0] + 8, dataset_shape[1] + 8
+            )
+            image = tf.image.random_crop(image, dataset_shape)
+            image = tf.image.random_flip_left_right(image)
+            return image, label
 
         # Get the training and validation datasets from the directory
         train = tf.keras.utils.image_dataset_from_directory(
@@ -59,134 +81,42 @@ class Tensorflow:
         )
 
         # Batch and prefetch the dataset
-        train_dataset = train.batch(batch_size).prefetch(tf.data.AUTOTUNE)
-        val_dataset = val.batch(batch_size).prefetch(tf.data.AUTOTUNE)
+        train_dataset = (
+            train.map(preprocessing)
+            .map(augmentation)
+            .shuffle(1000, seed=dataset_seed_val)
+            .batch(batch_size, drop_remainder=False)
+            .prefetch(tf.data.AUTOTUNE)
+        )
+        val_dataset = (
+            val.map(preprocessing).batch(batch_size).prefetch(tf.data.AUTOTUNE)
+        )
 
         return train_dataset, val_dataset
 
     def load_model(self, model_name, dataset_details):
         num_classes = dataset_details["num_classes"]
-        training_shape = dataset_details["training_shape"]
-        normalization_mean = dataset_details["normalization"]["mean"]
-        normalization_std = dataset_details["normalization"]["std"]
+        dataset_shape = dataset_details["dataset_shape"]
 
-        model_dictionary = {
-            "EfficientNetB4": {
-                "application": tf.keras.applications.EfficientNetB4,
-                "args": {
-                    "include_top": True,
-                    "weights": None,
-                    "input_shape": training_shape,
-                    "classes": num_classes,
-                    "classifier_activation": "softmax",
-                },
-            },
-            "InceptionV3": {
-                "application": tf.keras.applications.InceptionV3,
-                "args": {
-                    "include_top": True,
-                    "weights": None,
-                    "input_shape": training_shape,
-                    "classes": num_classes,
-                    "classifier_activation": "softmax",
-                },
-            },
-            "ResNet50": {
-                "application": tf.keras.applications.resnet_v2.ResNet50V2,
-                "args": {
-                    "include_top": True,
-                    "weights": None,
-                    "input_shape": training_shape,
-                    "classes": num_classes,
-                    "classifier_activation": "softmax",
-                },
-            },
-            "ResNet101": {
-                "application": tf.keras.applications.resnet_v2.ResNet101V2,
-                "args": {
-                    "include_top": True,
-                    "weights": None,
-                    "input_shape": training_shape,
-                    "classes": num_classes,
-                    "classifier_activation": "softmax",
-                },
-            },
-            "ResNet152": {
-                "application": tf.keras.applications.resnet_v2.ResNet152V2,
-                "args": {
-                    "include_top": True,
-                    "weights": None,
-                    "input_shape": training_shape,
-                    "classes": num_classes,
-                    "classifier_activation": "softmax",
-                },
-            },
-            "DenseNet121": {
-                "application": tf.keras.applications.DenseNet121,
-                "args": {
-                    "include_top": True,
-                    "weights": None,
-                    "input_shape": training_shape,
-                    "classes": num_classes,
-                    "classifier_activation": "softmax",
-                },
-            },
-            "DenseNet169": {
-                "application": tf.keras.applications.DenseNet169,
-                "args": {
-                    "include_top": True,
-                    "weights": None,
-                    "input_shape": training_shape,
-                    "classes": num_classes,
-                    "classifier_activation": "softmax",
-                },
-            },
-            "DenseNet201": {
-                "application": tf.keras.applications.DenseNet201,
-                "args": {
-                    "include_top": True,
-                    "weights": None,
-                    "input_shape": training_shape,
-                    "classes": num_classes,
-                    "classifier_activation": "softmax",
-                },
-            },
+        model_functions = {
+            "ResNet20": resnet.resnet20,
+            "ResNet32": resnet.resnet32,
+            "ResNet44": resnet.resnet44,
+            "ResNet56": resnet.resnet56,
+            "ResNet110": resnet.resnet110,
+            "ResNet1202": resnet.resnet1202,
         }
 
-        preprocessing = tf.keras.Sequential(
-            [
-                tf.keras.layers.Rescaling(1.0 / 255),
-                tf.keras.layers.Normalization(
-                    mean=normalization_mean, variance=np.square(normalization_std)
-                ),
-                tf.keras.layers.Resizing(
-                    training_shape[0], training_shape[1], interpolation="nearest"
-                ),
-            ],
-            name="preprocessing",
+        model = model_functions[model_name](
+            input_shape=dataset_shape, num_classes=num_classes
         )
-
-        data_augmentation = tf.keras.Sequential(
-            [
-                tf.keras.layers.ZeroPadding2D(10),
-                tf.keras.layers.RandomCrop(training_shape[0], training_shape[1]),
-                tf.keras.layers.RandomFlip("horizontal"),
-            ],
-            name="data_augmentation",
-        )
-
-        application = model_dictionary[model_name]["application"](
-            **model_dictionary[model_name]["args"]
-        )
-
-        model = tf.keras.Sequential()
-        model.add(preprocessing)
-        model.add(data_augmentation)
-        model.add(application)
 
         model.build(
-            input_shape=(None, training_shape[0], training_shape[1], training_shape[2])
+            input_shape=(None, dataset_shape[0], dataset_shape[1], dataset_shape[2])
         )
+
+        # Print the model summary
+        model.summary()
 
         return model
 
@@ -200,23 +130,37 @@ class Tensorflow:
         save_epoch_logs=False,
         csv_train_log_file=None,
     ):
+        """
+        ## Define the learning rate schedule
+        """
+
+        def lr_schedule(epoch):
+            lr = 0.1
+            if epoch < 82:
+                return lr
+            elif epoch < 123:
+                return lr * 0.1
+            else:
+                return lr * 0.01
+
         model.compile(
-            optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
+            optimizer=tf.keras.optimizers.experimental.SGD(
+                weight_decay=0.0001, momentum=0.9, learning_rate=lr_schedule(0)
+            ),
             loss=tf.keras.losses.SparseCategoricalCrossentropy(),
             metrics=["accuracy"],
         )
 
-        # Print the model summary
-        model.summary()
+        lr_scheduler = tf.keras.callbacks.LearningRateScheduler(lr_schedule)
 
         ## Define csv logger callback
         csv_logger = tf.keras.callbacks.CSVLogger(csv_train_log_file)
 
         # Define callbacks
         if save_epoch_logs:
-            callbacks = [csv_logger]
+            callbacks = [csv_logger, lr_scheduler]
         else:
-            callbacks = []
+            callbacks = [lr_scheduler]
 
         # Train the model
         model.fit(

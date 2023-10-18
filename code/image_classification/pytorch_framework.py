@@ -9,6 +9,8 @@ import numpy as np
 from sklearn.metrics import accuracy_score
 from datetime import datetime
 
+import resnet_pytorch as resnet
+
 
 class Pytorch:
     def __init__(self):
@@ -25,26 +27,42 @@ class Pytorch:
         train_path = dataset_details["train_path"]
         val_path = dataset_details["val_path"]
         batch_size = dataset_details["batch_size"]
+        normalization_mean = dataset_details["normalization"]["mean"]
+        normalization_std = dataset_details["normalization"]["std"]
 
         data_generator = torch.Generator()
         data_generator.manual_seed(dataset_seed_val)
 
-        transform_to_tensor = torchvision.transforms.Compose(
-            [torchvision.transforms.ToTensor()]
+        normalize = torchvision.transforms.Normalize(
+            mean=normalization_mean, std=normalization_std
+        )
+
+        preprocessing = torchvision.transforms.Compose(
+            [
+                torchvision.transforms.ToTensor(),
+                normalize,
+            ]
+        )
+
+        preprocessing_augument = torchvision.transforms.Compose(
+            [
+                torchvision.transforms.RandomHorizontalFlip(),
+                torchvision.transforms.RandomCrop(32, 4),
+                torchvision.transforms.ToTensor(),
+                normalize,
+            ]
         )
 
         train = torchvision.datasets.ImageFolder(
-            root=train_path, transform=transform_to_tensor
+            root=train_path, transform=preprocessing_augument
         )
-        val = torchvision.datasets.ImageFolder(
-            root=val_path, transform=transform_to_tensor
-        )
+        val = torchvision.datasets.ImageFolder(root=val_path, transform=preprocessing)
 
         train_dataset = torch.utils.data.DataLoader(
             train,
             batch_size=batch_size,
             shuffle=True,
-            num_workers=1,
+            num_workers=4,
             generator=data_generator,
             pin_memory=True,
         )
@@ -53,7 +71,7 @@ class Pytorch:
             val,
             batch_size=batch_size,
             shuffle=False,
-            num_workers=1,
+            num_workers=4,
             generator=data_generator,
             pin_memory=True,
         )
@@ -62,91 +80,17 @@ class Pytorch:
 
     def load_model(self, model_name, dataset_details):
         num_classes = dataset_details["num_classes"]
-        training_shape = dataset_details["training_shape"]
-        normalization_mean = dataset_details["normalization"]["mean"]
-        normalization_std = dataset_details["normalization"]["std"]
 
-        model_dictionary = {
-            "EfficientNetB4": {
-                "application": torchvision.models.efficientnet_b4,
-                "args": {
-                    "weights": None,
-                    "num_classes": num_classes,
-                },
-            },
-            "InceptionV3": {
-                "application": torchvision.models.inception_v3,
-                "args": {
-                    "weights": None,
-                    "num_classes": num_classes,
-                },
-            },
-            "ResNet50": {
-                "application": torchvision.models.resnet50,
-                "args": {
-                    "weights": None,
-                    "num_classes": num_classes,
-                },
-            },
-            "ResNet101": {
-                "application": torchvision.models.resnet101,
-                "args": {
-                    "weights": None,
-                    "num_classes": num_classes,
-                },
-            },
-            "ResNet152": {
-                "application": torchvision.models.resnet152,
-                "args": {
-                    "weights": None,
-                    "num_classes": num_classes,
-                },
-            },
-            "DenseNet121": {
-                "application": torchvision.models.densenet121,
-                "args": {
-                    "weights": None,
-                    "num_classes": num_classes,
-                },
-            },
-            "DenseNet169": {
-                "application": torchvision.models.densenet169,
-                "args": {
-                    "weights": None,
-                    "num_classes": num_classes,
-                },
-            },
-            "DenseNet201": {
-                "application": torchvision.models.densenet201,
-                "args": {
-                    "weights": None,
-                    "num_classes": num_classes,
-                },
-            },
+        model_functions = {
+            "ResNet20": resnet.resnet20,
+            "ResNet32": resnet.resnet32,
+            "ResNet44": resnet.resnet44,
+            "ResNet56": resnet.resnet56,
+            "ResNet110": resnet.resnet110,
+            "ResNet1202": resnet.resnet1202,
         }
 
-        preprocessing = torch.nn.Sequential(
-            torchvision.transforms.v2.Normalize(normalization_mean, normalization_std),
-            torchvision.transforms.v2.Resize(
-                training_shape[:2],
-                antialias=False,
-                interpolation=torchvision.transforms.InterpolationMode.NEAREST,
-            ),
-        )
-        augmentation = torch.nn.Sequential(
-            torchvision.transforms.v2.Pad(10),
-            torchvision.transforms.v2.RandomCrop(training_shape[:2]),
-            torchvision.transforms.v2.RandomHorizontalFlip(),
-        )
-
-        application = model_dictionary[model_name]["application"](
-            **model_dictionary[model_name]["args"]
-        )
-
-        model = torch.nn.Sequential()
-        model.add_module("preprocessing", preprocessing)
-        model.add_module("augmentation", augmentation)
-        model.add_module("application", application)
+        model = model_functions[model_name](num_classes=num_classes)
 
         model.to(self.device)
 
@@ -167,9 +111,17 @@ class Pytorch:
     ):
         epoch_logs = []
 
-        criterion = torch.nn.CrossEntropyLoss()
+        criterion = torch.nn.CrossEntropyLoss().to(self.device)
 
-        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+        learning_rate = 0.1
+
+        optimizer = torch.optim.SGD(
+            model.parameters(), lr=learning_rate, weight_decay=0.0001, momentum=0.9
+        )
+
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(
+            optimizer, milestones=[82, 123], gamma=0.1
+        )
 
         def train_one_epoch():
             running_loss = 0
@@ -218,6 +170,9 @@ class Pytorch:
 
             # Train the model for one epoch
             train_loss, train_accuracy = train_one_epoch()
+
+            # Update the learning rate
+            scheduler.step()
 
             # Evaluate the model on the validation dataset after each epoch
             validation_loss, validation_accuracy = self.evaluate(

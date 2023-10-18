@@ -2,7 +2,32 @@ import argparse, csv, math, os, random, sys, yaml
 import numpy as np
 from datetime import datetime
 
-script_version = "2.0.0"
+script_version = "3.0.0"
+
+
+def get_model_details(model_name):
+    models = {
+        "ResNet20": {
+            "epochs": 164,
+        },
+        "ResNet32": {
+            "epochs": 164,
+        },
+        "ResNet44": {
+            "epochs": 164,
+        },
+        "ResNet56": {
+            "epochs": 164,
+        },
+        "ResNet110": {
+            "epochs": 164,
+        },
+        "ResNet1202": {
+            "epochs": 164,
+        },
+    }
+
+    return models[model_name]
 
 
 def get_dataset_details(dataset_name):
@@ -15,8 +40,7 @@ def get_dataset_details(dataset_name):
             "val_path": "./cifar100/test/",
             "num_classes": 100,
             "dataset_shape": (32, 32, 3),
-            "training_shape": (128, 128, 3),
-            "batch_size": 32,
+            "batch_size": 128,
             "normalization": {
                 "mean": (0.5071, 0.4865, 0.4409),
                 "std": (0.2673, 0.2564, 0.2762),
@@ -27,8 +51,7 @@ def get_dataset_details(dataset_name):
             "val_path": "./cifar10/test/",
             "num_classes": 10,
             "dataset_shape": (32, 32, 3),
-            "training_shape": (128, 128, 3),
-            "batch_size": 32,
+            "batch_size": 128,
             "normalization": {
                 "mean": (0.4914, 0.4822, 0.4465),
                 "std": (0.247, 0.2435, 0.2616),
@@ -39,8 +62,7 @@ def get_dataset_details(dataset_name):
             "val_path": "./cats_vs_dogs/test/",
             "num_classes": 2,
             "dataset_shape": (128, 128, 3),
-            "training_shape": (128, 128, 3),
-            "batch_size": 32,
+            "batch_size": 128,
             # Normalization done on images resized to 128x128
             "normalization": {
                 "mean": (0.4872, 0.4544, 0.4165),
@@ -55,10 +77,10 @@ def get_dataset_details(dataset_name):
 def image_classification(
     run_number,
     machine_learning_framework="TensorFlow",
-    model_name="Densenet",
+    model_name="ResNet20",
     dataset_name="cifar10",
     deterministic=False,
-    epochs=50,
+    epochs=200,
     learning_rate=4e-4,
     seed_val=1,
     run_name="",
@@ -329,7 +351,7 @@ def parse_arguments(args):
         dest="epochs",
         help="Number of epochs",
         type=int,
-        default=50,
+        default=0,
     )
 
     parser.add_argument(
@@ -389,16 +411,14 @@ def parse_arguments(args):
         "--model-name",
         dest="model_name",
         help="Name of model to train",
-        default="DenseNet",
+        default="ResNet20",
         choices=[
-            "EfficientNetB4",
-            "InceptionV3",
-            "ResNet50",
-            "ResNet101",
-            "ResNet152",
-            "DenseNet121",
-            "DenseNet169",
-            "DenseNet201",
+            "ResNet20",
+            "ResNet32",
+            "ResNet44",
+            "ResNet56",
+            "ResNet110",
+            "ResNet1202",
         ],
         required=True,
     )
@@ -423,6 +443,11 @@ if __name__ == "__main__":
     system_info = get_system_info(save_filename)
     seed_val = args.seed_val
 
+    if args.epochs > 0:
+        epochs = args.epochs
+    else:
+        epochs = get_model_details(args.model_name)["epochs"]
+
     for x in range(args.num_runs):
         if args.random_seed_val:
             seed_val = random.randint(0, 2**32 - 1)
@@ -444,7 +469,7 @@ if __name__ == "__main__":
             model_name=args.model_name,
             dataset_name=args.dataset_name,
             deterministic=args.deterministic,
-            epochs=args.epochs,
+            epochs=epochs,
             learning_rate=args.learning_rate,
             seed_val=seed_val,
             run_name=args.run_name,
@@ -456,7 +481,7 @@ if __name__ == "__main__":
             test_loss=test_loss,
             test_accuracy=test_accuracy,
             machine_learning_framework=args.machine_learning_framework,
-            epochs=args.epochs,
+            epochs=epochs,
             learning_rate=args.learning_rate,
             training_time=training_time,
             model_name=args.model_name,

@@ -81,7 +81,6 @@ def image_classification(
     dataset_name="cifar10",
     deterministic=False,
     epochs=200,
-    learning_rate=4e-4,
     seed_val=1,
     run_name="",
     save_model=False,
@@ -152,7 +151,6 @@ def image_classification(
         train_dataset,
         val_dataset,
         epochs,
-        learning_rate,
         save_epoch_logs,
         csv_train_log_file,
     )
@@ -245,7 +243,6 @@ def save_score(
     test_accuracy,
     machine_learning_framework,
     epochs,
-    learning_rate,
     training_time,
     model_name,
     dataset_name,
@@ -284,7 +281,6 @@ def save_score(
             "machine_learning_framework",
             "framework_version",
             "epochs",
-            "learning_rate",
             "model_name",
             "dataset_name",
             "random_seed",
@@ -307,7 +303,6 @@ def save_score(
                 "machine_learning_framework": machine_learning_framework,
                 "framework_version": framework.version,
                 "epochs": epochs,
-                "learning_rate": learning_rate,
                 "model_name": model_name,
                 "dataset_name": dataset_name,
                 "random_seed": seed_val,
@@ -352,14 +347,6 @@ def parse_arguments(args):
         help="Number of epochs",
         type=int,
         default=0,
-    )
-
-    parser.add_argument(
-        "--learning-rate",
-        dest="learning_rate",
-        help="Set the learning rate",
-        type=float,
-        default=4e-4,
     )
 
     parser.add_argument(
@@ -470,7 +457,6 @@ if __name__ == "__main__":
             dataset_name=args.dataset_name,
             deterministic=args.deterministic,
             epochs=epochs,
-            learning_rate=args.learning_rate,
             seed_val=seed_val,
             run_name=args.run_name,
             save_model=args.save_model,
@@ -482,7 +468,6 @@ if __name__ == "__main__":
             test_accuracy=test_accuracy,
             machine_learning_framework=args.machine_learning_framework,
             epochs=epochs,
-            learning_rate=args.learning_rate,
             training_time=training_time,
             model_name=args.model_name,
             dataset_name=args.dataset_name,

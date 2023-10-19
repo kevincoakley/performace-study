@@ -116,7 +116,7 @@ class Tensorflow:
         )
 
         # Print the model summary
-        model.summary()
+        #model.summary()
 
         return model
 
@@ -126,7 +126,6 @@ class Tensorflow:
         train_dataset,
         val_dataset,
         epochs,
-        learning_rate,
         save_epoch_logs=False,
         csv_train_log_file=None,
     ):
@@ -136,9 +135,9 @@ class Tensorflow:
 
         def lr_schedule(epoch):
             lr = 0.1
-            if epoch < 82:
+            if epoch < 91:
                 return lr
-            elif epoch < 123:
+            elif epoch < 137:
                 return lr * 0.1
             else:
                 return lr * 0.01

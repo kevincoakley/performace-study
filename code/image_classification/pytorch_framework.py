@@ -105,7 +105,6 @@ class Pytorch:
         train_dataloader,
         val_dataloader,
         epochs,
-        learning_rate,
         save_epoch_logs=False,
         csv_train_log_file=None,
     ):
@@ -120,7 +119,7 @@ class Pytorch:
         )
 
         scheduler = torch.optim.lr_scheduler.MultiStepLR(
-            optimizer, milestones=[82, 123], gamma=0.1
+            optimizer, milestones=[91, 137], gamma=0.1
         )
 
         def train_one_epoch():

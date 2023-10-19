@@ -41,6 +41,7 @@ class Tensorflow:
     ):
         train_path = dataset_details["train_path"]
         val_path = dataset_details["val_path"]
+        test_path = dataset_details["test_path"]
         dataset_shape = dataset_details["dataset_shape"]
         batch_size = dataset_details["batch_size"]
         normalization_mean = dataset_details["normalization"]["mean"]
@@ -79,6 +80,13 @@ class Tensorflow:
             interpolation="nearest",
             batch_size=None,
         )
+        test = tf.keras.utils.image_dataset_from_directory(
+            test_path,
+            shuffle=False,
+            image_size=dataset_shape[:2],
+            interpolation="nearest",
+            batch_size=None,
+        )
 
         # Batch and prefetch the dataset
         train_dataset = (
@@ -91,8 +99,11 @@ class Tensorflow:
         val_dataset = (
             val.map(preprocessing).batch(batch_size).prefetch(tf.data.AUTOTUNE)
         )
+        test_dataset = (
+            test.map(preprocessing).batch(batch_size).prefetch(tf.data.AUTOTUNE)
+        )
 
-        return train_dataset, val_dataset
+        return train_dataset, val_dataset, test_dataset
 
     def load_model(self, model_name, dataset_details):
         num_classes = dataset_details["num_classes"]
@@ -116,7 +127,7 @@ class Tensorflow:
         )
 
         # Print the model summary
-        #model.summary()
+        # model.summary()
 
         return model
 

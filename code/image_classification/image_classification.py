@@ -8,22 +8,22 @@ script_version = "3.0.0"
 def get_model_details(model_name):
     models = {
         "ResNet20": {
-            "epochs": 164,
+            "epochs": 182,
         },
         "ResNet32": {
-            "epochs": 164,
+            "epochs": 182,
         },
         "ResNet44": {
-            "epochs": 164,
+            "epochs": 182,
         },
         "ResNet56": {
-            "epochs": 164,
+            "epochs": 182,
         },
         "ResNet110": {
-            "epochs": 164,
+            "epochs": 182,
         },
         "ResNet1202": {
-            "epochs": 164,
+            "epochs": 182,
         },
     }
 
@@ -37,7 +37,8 @@ def get_dataset_details(dataset_name):
     datasets = {
         "cifar100": {
             "train_path": "./cifar100/train/",
-            "val_path": "./cifar100/test/",
+            "val_path": "./cifar100/val/",
+            "test_path": "./cifar100/test/",
             "num_classes": 100,
             "dataset_shape": (32, 32, 3),
             "batch_size": 128,
@@ -48,7 +49,8 @@ def get_dataset_details(dataset_name):
         },
         "cifar10": {
             "train_path": "./cifar10/train/",
-            "val_path": "./cifar10/test/",
+            "val_path": "./cifar10/val/",
+            "test_path": "./cifar10/test/",
             "num_classes": 10,
             "dataset_shape": (32, 32, 3),
             "batch_size": 128,
@@ -111,7 +113,9 @@ def image_classification(
     ## Load the dataset
     """
     # Always use the same random seed for the dataset
-    train_dataset, val_dataset = framework.load_dataset(dataset_details, 42)
+    train_dataset, val_dataset, test_dataset = framework.load_dataset(
+        dataset_details, 42
+    )
 
     """
     ## Create the model
@@ -189,7 +193,7 @@ def image_classification(
     )
 
     score = framework.evaluate(
-        trained_model, val_dataset, save_predictions, predictions_csv_file
+        trained_model, test_dataset, save_predictions, predictions_csv_file
     )
 
     print("Test loss: ", score[0])

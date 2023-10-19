@@ -26,6 +26,7 @@ class Pytorch:
     def load_dataset(self, dataset_details, dataset_seed_val):
         train_path = dataset_details["train_path"]
         val_path = dataset_details["val_path"]
+        test_path = dataset_details["test_path"]
         batch_size = dataset_details["batch_size"]
         normalization_mean = dataset_details["normalization"]["mean"]
         normalization_std = dataset_details["normalization"]["std"]
@@ -57,6 +58,7 @@ class Pytorch:
             root=train_path, transform=preprocessing_augument
         )
         val = torchvision.datasets.ImageFolder(root=val_path, transform=preprocessing)
+        test = torchvision.datasets.ImageFolder(root=test_path, transform=preprocessing)
 
         train_dataset = torch.utils.data.DataLoader(
             train,
@@ -76,7 +78,16 @@ class Pytorch:
             pin_memory=True,
         )
 
-        return train_dataset, val_dataset
+        test_dataset = torch.utils.data.DataLoader(
+            test,
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=4,
+            generator=data_generator,
+            pin_memory=True,
+        )
+
+        return train_dataset, val_dataset, test_dataset
 
     def load_model(self, model_name, dataset_details):
         num_classes = dataset_details["num_classes"]

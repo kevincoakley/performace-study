@@ -16,6 +16,7 @@ class Pytorch:
     def __init__(self):
         self.version = torch.__version__
         self.device = torch.device("cuda:0")
+        self.lr_warmup = False
 
     def deterministic(self, seed_val):
         torch.manual_seed(seed_val)
@@ -123,26 +124,29 @@ class Pytorch:
 
         criterion = torch.nn.CrossEntropyLoss().to(self.device)
 
-        learning_rate = 0.1
-
-        optimizer = torch.optim.SGD(
-            model.parameters(), lr=learning_rate, weight_decay=0.0001, momentum=0.9
-        )
-
         """
         ## Define the learning rate schedule
         """
 
         def lr_schedule(epoch):
-            if epoch < 100:
+            if self.lr_warmup and epoch < 5:
+                lr = 0.01
+            elif epoch < 100:
                 lr = 0.1
             elif epoch < 150:
                 lr = 0.01
             else:
                 lr = 0.001
 
-            for param_group in optimizer.param_groups:
-                param_group["lr"] = lr
+            if epoch > 0:
+                for param_group in optimizer.param_groups:
+                    param_group["lr"] = lr
+
+            return lr
+
+        optimizer = torch.optim.SGD(
+            model.parameters(), lr=lr_schedule(0), weight_decay=0.0001, momentum=0.9
+        )
 
         def train_one_epoch():
             running_loss = 0

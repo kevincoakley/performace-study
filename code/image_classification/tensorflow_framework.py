@@ -10,6 +10,7 @@ import resnet_tensorflow as resnet
 class Tensorflow:
     def __init__(self):
         self.version = tf.version.VERSION
+        self.lr_warmup = False
 
     def deterministic(self, seed_val):
         """
@@ -145,7 +146,9 @@ class Tensorflow:
         """
 
         def lr_schedule(epoch):
-            if epoch < 100:
+            if self.lr_warmup and epoch < 5:
+                return 0.01
+            elif epoch < 100:
                 return 0.1
             elif epoch < 150:
                 return 0.01

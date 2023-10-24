@@ -9,21 +9,27 @@ def get_model_details(model_name):
     models = {
         "ResNet20": {
             "epochs": 200,
+            "lr_warmup": False,
         },
         "ResNet32": {
             "epochs": 200,
+            "lr_warmup": False,
         },
         "ResNet44": {
             "epochs": 200,
+            "lr_warmup": False,
         },
         "ResNet56": {
             "epochs": 200,
+            "lr_warmup": False,
         },
         "ResNet110": {
             "epochs": 200,
+            "lr_warmup": True,
         },
         "ResNet1202": {
             "epochs": 200,
+            "lr_warmup": True,
         },
     }
 
@@ -93,10 +99,12 @@ def image_classification(
         from tensorflow_framework import Tensorflow
 
         framework = Tensorflow()
+        framework.lr_warmup = get_model_details(model_name)["lr_warmup"]
     elif machine_learning_framework == "PyTorch":
         from pytorch_framework import Pytorch
 
         framework = Pytorch()
+        framework.lr_warmup = get_model_details(model_name)["lr_warmup"]
 
     if deterministic or seed_val != 1:
         """

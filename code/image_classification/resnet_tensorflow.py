@@ -99,10 +99,12 @@ def resnet(input_shape, num_blocks=3, num_classes=10):
         )
 
     # Add the classifier
-    x = tf.keras.layers.AveragePooling2D(pool_size=8)(x)
-    x = tf.keras.layers.Flatten()(x)
+    x = tf.keras.layers.GlobalAveragePooling2D()(x)
     outputs = tf.keras.layers.Dense(
-        num_classes, activation="softmax", kernel_initializer="he_normal"
+        num_classes,
+        activation="softmax",
+        kernel_initializer="he_normal",
+        kernel_regularizer=tf.keras.regularizers.l2(1e-4),
     )(x)
 
     # Build the model

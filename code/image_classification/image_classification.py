@@ -8,22 +8,22 @@ script_version = "3.0.0"
 def get_model_details(model_name):
     models = {
         "ResNet20": {
-            "epochs": 182,
+            "epochs": 200,
         },
         "ResNet32": {
-            "epochs": 182,
+            "epochs": 200,
         },
         "ResNet44": {
-            "epochs": 182,
+            "epochs": 200,
         },
         "ResNet56": {
-            "epochs": 182,
+            "epochs": 200,
         },
         "ResNet110": {
-            "epochs": 182,
+            "epochs": 200,
         },
         "ResNet1202": {
-            "epochs": 182,
+            "epochs": 200,
         },
     }
 

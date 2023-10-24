@@ -129,9 +129,20 @@ class Pytorch:
             model.parameters(), lr=learning_rate, weight_decay=0.0001, momentum=0.9
         )
 
-        scheduler = torch.optim.lr_scheduler.MultiStepLR(
-            optimizer, milestones=[91, 137], gamma=0.1
-        )
+        """
+        ## Define the learning rate schedule
+        """
+
+        def lr_schedule(epoch):
+            if epoch < 100:
+                lr = 0.1
+            elif epoch < 150:
+                lr = 0.01
+            else:
+                lr = 0.001
+
+            for param_group in optimizer.param_groups:
+                param_group["lr"] = lr
 
         def train_one_epoch():
             running_loss = 0
@@ -178,11 +189,11 @@ class Pytorch:
 
             start_time = datetime.now()
 
+            # Update the learning rate
+            lr_schedule(epoch)
+
             # Train the model for one epoch
             train_loss, train_accuracy = train_one_epoch()
-
-            # Update the learning rate
-            scheduler.step()
 
             # Evaluate the model on the validation dataset after each epoch
             validation_loss, validation_accuracy = self.evaluate(

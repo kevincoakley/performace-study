@@ -145,13 +145,12 @@ class Tensorflow:
         """
 
         def lr_schedule(epoch):
-            lr = 0.1
-            if epoch < 91:
-                return lr
-            elif epoch < 137:
-                return lr * 0.1
+            if epoch < 100:
+                return 0.1
+            elif epoch < 150:
+                return 0.01
             else:
-                return lr * 0.01
+                return 0.001
 
         model.compile(
             optimizer=tf.keras.optimizers.experimental.SGD(

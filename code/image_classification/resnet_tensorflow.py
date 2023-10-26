@@ -3,12 +3,18 @@ import tensorflow as tf
 #
 # ResNet 20, 36, 44, 56, 110, 1202 for CIFAR10
 #
-# He, Kaiming, et al. "Deep residual learning for image recognition." (2016)
+# He, Kaiming, et al. "Deep residual learning for image recognition." (2016) [1]
 #  - https://arxiv.org/abs/1512.03385
 #
 
 
 def resnet_basic_block(inputs, num_filters, strides=1, name=None):
+
+    # Following ResNet building block from Figure 2 [1]. 
+    # Using the [3x3 , 3x3] x n convention. Section 4.2 [1]
+
+    # Between stacks, the subsampling is performed by convolutions with 
+    # a stride of 2. Section 4.2 [1]
     x = tf.keras.layers.Conv2D(
         num_filters,
         kernel_size=3,
@@ -19,6 +25,8 @@ def resnet_basic_block(inputs, num_filters, strides=1, name=None):
         kernel_regularizer=tf.keras.regularizers.l2(1e-4),
         name=name + "_1_conv2d",
     )(inputs)
+    # We adopt batch normalization right after each convolution and before 
+    #   activation. Section 3.4 [1]
     x = tf.keras.layers.BatchNormalization(
         epsilon=1e-5, momentum=0.1, name=name + "_1_bn"
     )(x)
@@ -34,11 +42,25 @@ def resnet_basic_block(inputs, num_filters, strides=1, name=None):
         kernel_regularizer=tf.keras.regularizers.l2(1e-4),
         name=name + "_2_conv2d",
     )(x)
+    # We adopt batch normalization right after each convolution and before 
+    #   activation. Section 3.4 [1]
     x = tf.keras.layers.BatchNormalization(
         epsilon=1e-5, momentum=0.1, name=name + "_2_bn"
     )(x)
 
+    #
+    # strides = 1:
+    #   The identity shortcuts (Eqn.(1)) can be directly used when the input 
+    #   and output are of the same dimensions (solid line shortcuts in Fig. 3).
+    # strides = 2:
+    #   When the dimensions increase (dotted line shortcuts in Fig. 3), we consider 
+    #   two options: ... (B) The projection shortcut in Eqn.(2) is used to match 
+    #   dimensions (done by 1×1 convolutions).
+    # Section 3.3 "Residual Network" [1]
+    #
     if strides != 1:
+        # The projection shortcut in Eqn.(2) is used to match dimensions 
+        # (done by 1×1 convolutions). Section 3.3 "Residual Network" [1]
         y = tf.keras.layers.Conv2D(
             num_filters,
             kernel_size=1,
@@ -50,6 +72,8 @@ def resnet_basic_block(inputs, num_filters, strides=1, name=None):
             name=name + "_0_conv2d",
         )(inputs)
     else:
+        # The identity shortcuts (Eqn.(1)) can be directly used when the input 
+        # and output are of the same dimensions. Section 3.3 "Residual Network" [1]
         y = inputs
 
     out = tf.keras.layers.add([x, y], name=name + "_add")
@@ -59,8 +83,26 @@ def resnet_basic_block(inputs, num_filters, strides=1, name=None):
 
 
 def resnet(input_shape, num_blocks=3, num_classes=10):
+    #
+    # The following table summarizes the architecture: Section 4.2 [1]
+    # | output map size | 32×32 | 16×16 | 8×8 |
+    # |-----------------|-------|-------|-----|
+    # | # layers        | 1+2n  | 2n    | 2n  |
+    # | # filters       | 16    | 32    | 64  |
+    # 
+    # n = num_blocks
+    #
+    # num_blocks = 3: ResNet20
+    # num_blocks = 5: ResNet32
+    # num_blocks = 7: ResNet44
+    # num_blocks = 9: ResNet56
+    # num_blocks = 18: ResNet110
+    # num_blocks = 200: ResNet1202
+    #
+
     inputs = tf.keras.layers.Input(shape=input_shape)
 
+    # The first layer is 3×3 convolutions. Section 4.2 [1]
     name = "conv1"
     x = tf.keras.layers.Conv2D(
         16,
@@ -72,33 +114,51 @@ def resnet(input_shape, num_blocks=3, num_classes=10):
         kernel_regularizer=tf.keras.regularizers.l2(1e-4),
         name=name + "_conv2d",
     )(inputs)
+    # We adopt batch normalization right after each convolution and before 
+    # activation. Section 3.4 [1] 
     x = tf.keras.layers.BatchNormalization(
         epsilon=1e-5, momentum=0.1, name=name + "_bn"
     )(x)
     x = tf.keras.layers.Activation("relu", name=name + "_relu")(x)
 
+    # The numbers of filters are {16, 32, 64} respectively. Section 4.2 [1]
+
     name = "conv2"
+    # The first stack uses 16 filters. Section 4.2 [1]
+    # First block of the first stack uses identity shortcut (strides=1) since the
+    #   input size matches the output size of the first layer is 3×3 convolutions.
+    #   Section 3.3 "Residual Network" [1]
     x = resnet_basic_block(inputs=x, num_filters=16, strides=1, name=name + "_block1")
     for blocks in range(num_blocks - 1):
+        # All other blocks use identity shortcut (strides=1)
         x = resnet_basic_block(
             inputs=x, num_filters=16, strides=1, name=name + "_block" + str(blocks + 2)
         )
 
     name = "conv3"
+    # The second stack uses 32 filters. Section 4.2 [1]
+    # First block of the second stack uses projection shortcut (strides=2)
+    #   Section 3.3 "Residual Network" [1]
     x = resnet_basic_block(inputs=x, num_filters=32, strides=2, name=name + "_block1")
     for blocks in range(num_blocks - 1):
+        # All other blocks use identity shortcut (strides=1)
         x = resnet_basic_block(
             inputs=x, num_filters=32, strides=1, name=name + "_block" + str(blocks + 2)
         )
 
     name = "conv4"
+    # The third stack uses 64 filters. Section 4.2 [1]
+    # First block of the third stack uses projection shortcut (strides=2)
+    #   Section 3.3 "Residual N etwork" [1]
     x = resnet_basic_block(inputs=x, num_filters=64, strides=2, name=name + "_block1")
     for blocks in range(num_blocks - 1):
+        # All other blocks use identity shortcut (strides=1)
         x = resnet_basic_block(
             inputs=x, num_filters=64, strides=1, name=name + "_block" + str(blocks + 2)
         )
 
-    # Add the classifier
+    # The network ends with a global average pooling, a 10-way fully-connected 
+    # layer, and softmax. Section 4.2 [1]
     x = tf.keras.layers.GlobalAveragePooling2D()(x)
     outputs = tf.keras.layers.Dense(
         num_classes,

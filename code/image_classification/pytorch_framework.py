@@ -1,9 +1,6 @@
 import torch
 import torchvision
 
-torchvision.disable_beta_transforms_warning()
-from torchvision.transforms import v2
-
 import csv, random
 import numpy as np
 from sklearn.metrics import accuracy_score

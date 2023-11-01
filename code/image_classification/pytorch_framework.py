@@ -1,18 +1,20 @@
 import torch
 import torchvision
 
-import csv, random
+import csv, math, random
 import numpy as np
 from sklearn.metrics import accuracy_score
 from datetime import datetime
 
 import resnet_pytorch as resnet
+import densenet_pytorch as densenet
 
 
 class Pytorch:
     def __init__(self):
         self.version = torch.__version__
         self.device = torch.device("cuda:0")
+        self.epochs = 0
         self.lr_warmup = False
 
     def deterministic(self, seed_val):
@@ -21,11 +23,11 @@ class Pytorch:
         np.random.seed(seed_val)
         torch.use_deterministic_algorithms(True)
 
-    def load_dataset(self, dataset_details, dataset_seed_val):
+    def load_dataset(self, model_details, dataset_details, dataset_seed_val):
+        batch_size = model_details["batch_size"]
         train_path = dataset_details["train_path"]
         val_path = dataset_details["val_path"]
         test_path = dataset_details["test_path"]
-        batch_size = dataset_details["batch_size"]
         normalization_mean = dataset_details["normalization"]["mean"]
         normalization_std = dataset_details["normalization"]["std"]
 
@@ -97,6 +99,12 @@ class Pytorch:
             "ResNet56": resnet.resnet56,
             "ResNet110": resnet.resnet110,
             "ResNet1202": resnet.resnet1202,
+            "DenseNet_k12d40": densenet.densenet_k12d40,
+            "DenseNet_k12d100": densenet.densenet_k12d100,
+            "DenseNet_k24d100": densenet.densenet_k24d100,
+            "DenseNet_bc_k12d100": densenet.densenet_bc_k12d100,
+            "DenseNet_bc_k24d250": densenet.densenet_bc_k24d250,
+            "DenseNet_bc_k40d190": densenet.densenet_bc_k40d190,
         }
 
         model = model_functions[model_name](num_classes=num_classes)
@@ -113,10 +121,12 @@ class Pytorch:
         model,
         train_dataloader,
         val_dataloader,
+        model_details,
         epochs,
         save_epoch_logs=False,
         csv_train_log_file=None,
     ):
+        nesterov = model_details["nesterov"]
         epoch_logs = []
 
         criterion = torch.nn.CrossEntropyLoss().to(self.device)
@@ -128,9 +138,9 @@ class Pytorch:
         def lr_schedule(epoch):
             if self.lr_warmup and epoch < 5:
                 lr = 0.01
-            elif epoch < 100:
+            elif epoch < math.ceil(self.epochs * 0.5):
                 lr = 0.1
-            elif epoch < 150:
+            elif epoch < math.ceil(self.epochs * 0.75):
                 lr = 0.01
             else:
                 lr = 0.001
@@ -142,7 +152,11 @@ class Pytorch:
             return lr
 
         optimizer = torch.optim.SGD(
-            model.parameters(), lr=lr_schedule(0), weight_decay=0.0001, momentum=0.9
+            model.parameters(),
+            lr=lr_schedule(0),
+            weight_decay=0.0001,
+            momentum=0.9,
+            nesterov=nesterov,
         )
 
         def train_one_epoch():

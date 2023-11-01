@@ -1,15 +1,17 @@
 import tensorflow as tf
 
-import csv, random
+import csv, math, random
 import numpy as np
 from sklearn.metrics import accuracy_score
 
 import resnet_tensorflow as resnet
+import densenet_tensorflow as densenet
 
 
 class Tensorflow:
     def __init__(self):
         self.version = tf.version.VERSION
+        self.epochs = 0
         self.lr_warmup = False
 
     def deterministic(self, seed_val):
@@ -37,14 +39,15 @@ class Tensorflow:
 
     def load_dataset(
         self,
+        model_details,
         dataset_details,
         dataset_seed_val,
     ):
+        batch_size = model_details["batch_size"]
         train_path = dataset_details["train_path"]
         val_path = dataset_details["val_path"]
         test_path = dataset_details["test_path"]
         dataset_shape = dataset_details["dataset_shape"]
-        batch_size = dataset_details["batch_size"]
         normalization_mean = dataset_details["normalization"]["mean"]
         normalization_std = dataset_details["normalization"]["std"]
 
@@ -117,6 +120,12 @@ class Tensorflow:
             "ResNet56": resnet.resnet56,
             "ResNet110": resnet.resnet110,
             "ResNet1202": resnet.resnet1202,
+            "DenseNet_k12d40": densenet.densenet_k12d40,
+            "DenseNet_k12d100": densenet.densenet_k12d100,
+            "DenseNet_k24d100": densenet.densenet_k24d100,
+            "DenseNet_bc_k12d100": densenet.densenet_bc_k12d100,
+            "DenseNet_bc_k24d250": densenet.densenet_bc_k24d250,
+            "DenseNet_bc_k40d190": densenet.densenet_bc_k40d190,
         }
 
         model = model_functions[model_name](
@@ -137,10 +146,13 @@ class Tensorflow:
         model,
         train_dataset,
         val_dataset,
+        model_details,
         epochs,
         save_epoch_logs=False,
         csv_train_log_file=None,
     ):
+        nesterov = model_details["nesterov"]
+
         """
         ## Define the learning rate schedule
         """
@@ -148,16 +160,19 @@ class Tensorflow:
         def lr_schedule(epoch):
             if self.lr_warmup and epoch < 5:
                 return 0.01
-            elif epoch < 100:
+            elif epoch < math.ceil(self.epochs * 0.5):
                 return 0.1
-            elif epoch < 150:
+            elif epoch < math.ceil(self.epochs * 0.75):
                 return 0.01
             else:
                 return 0.001
 
         model.compile(
             optimizer=tf.keras.optimizers.experimental.SGD(
-                weight_decay=0.0001, momentum=0.9, learning_rate=lr_schedule(0)
+                weight_decay=0.0001,
+                momentum=0.9,
+                learning_rate=lr_schedule(0),
+                nesterov=nesterov,
             ),
             loss=tf.keras.losses.SparseCategoricalCrossentropy(),
             metrics=["accuracy"],

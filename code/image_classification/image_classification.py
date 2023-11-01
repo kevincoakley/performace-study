@@ -7,28 +7,76 @@ script_version = "3.0.0"
 
 def get_model_details(model_name):
     models = {
+        "DenseNet_k12d40": {
+            "epochs": 300,
+            "batch_size": 64,
+            "nesterov": True,
+            "lr_warmup": False,
+        },
+        "DenseNet_k12d100": {
+            "epochs": 300,
+            "batch_size": 64,
+            "nesterov": True,
+            "lr_warmup": False,
+        },
+        "DenseNet_k24d100": {
+            "epochs": 300,
+            "batch_size": 64,
+            "nesterov": True,
+            "lr_warmup": False,
+        },
+        "DenseNet_bc_k12d100": {
+            "epochs": 300,
+            "batch_size": 64,
+            "nesterov": True,
+            "lr_warmup": False,
+        },
+        "DenseNet_bc_k24d250": {
+            "epochs": 300,
+            "batch_size": 64,
+            "nesterov": True,
+            "lr_warmup": False,
+        },
+        "DenseNet_bc_k40d190": {
+            "epochs": 300,
+            "batch_size": 64,
+            "nesterov": True,
+            "lr_warmup": False,
+        },
         "ResNet20": {
             "epochs": 200,
+            "batch_size": 128,
+            "nesterov": False,
             "lr_warmup": False,
         },
         "ResNet32": {
             "epochs": 200,
+            "batch_size": 128,
+            "nesterov": False,
             "lr_warmup": False,
         },
         "ResNet44": {
             "epochs": 200,
+            "batch_size": 128,
+            "nesterov": False,
             "lr_warmup": False,
         },
         "ResNet56": {
             "epochs": 200,
+            "batch_size": 128,
+            "nesterov": False,
             "lr_warmup": False,
         },
         "ResNet110": {
             "epochs": 200,
+            "batch_size": 128,
+            "nesterov": False,
             "lr_warmup": True,
         },
         "ResNet1202": {
             "epochs": 200,
+            "batch_size": 128,
+            "nesterov": False,
             "lr_warmup": True,
         },
     }
@@ -47,7 +95,6 @@ def get_dataset_details(dataset_name):
             "test_path": "./cifar100/test/",
             "num_classes": 100,
             "dataset_shape": (32, 32, 3),
-            "batch_size": 128,
             "normalization": {
                 "mean": (0.5071, 0.4865, 0.4409),
                 "std": (0.2673, 0.2564, 0.2762),
@@ -59,7 +106,6 @@ def get_dataset_details(dataset_name):
             "test_path": "./cifar10/test/",
             "num_classes": 10,
             "dataset_shape": (32, 32, 3),
-            "batch_size": 128,
             "normalization": {
                 "mean": (0.4914, 0.4822, 0.4465),
                 "std": (0.247, 0.2435, 0.2616),
@@ -70,7 +116,6 @@ def get_dataset_details(dataset_name):
             "val_path": "./cats_vs_dogs/test/",
             "num_classes": 2,
             "dataset_shape": (128, 128, 3),
-            "batch_size": 128,
             # Normalization done on images resized to 128x128
             "normalization": {
                 "mean": (0.4872, 0.4544, 0.4165),
@@ -99,11 +144,13 @@ def image_classification(
         from tensorflow_framework import Tensorflow
 
         framework = Tensorflow()
+        framework.epochs = epochs
         framework.lr_warmup = get_model_details(model_name)["lr_warmup"]
     elif machine_learning_framework == "PyTorch":
         from pytorch_framework import Pytorch
 
         framework = Pytorch()
+        framework.epochs = epochs
         framework.lr_warmup = get_model_details(model_name)["lr_warmup"]
 
     if deterministic or seed_val != 1:
@@ -111,6 +158,11 @@ def image_classification(
         ## Configure framework for fixed seed runs
         """
         framework.deterministic(seed_val)
+
+    """
+    ## Get the model details
+    """
+    model_details = get_model_details(model_name)
 
     """
     ## Get the dataset details
@@ -122,7 +174,7 @@ def image_classification(
     """
     # Always use the same random seed for the dataset
     train_dataset, val_dataset, test_dataset = framework.load_dataset(
-        dataset_details, 42
+        model_details, dataset_details, 42
     )
 
     """
@@ -162,6 +214,7 @@ def image_classification(
         model,
         train_dataset,
         val_dataset,
+        model_details,
         epochs,
         save_epoch_logs,
         csv_train_log_file,
@@ -412,6 +465,12 @@ def parse_arguments(args):
         help="Name of model to train",
         default="ResNet20",
         choices=[
+            "DenseNet_k12d40",
+            "DenseNet_k12d100",
+            "DenseNet_k24d100",
+            "DenseNet_bc_k12d100",
+            "DenseNet_bc_k24d250",
+            "DenseNet_bc_k40d190",
             "ResNet20",
             "ResNet32",
             "ResNet44",

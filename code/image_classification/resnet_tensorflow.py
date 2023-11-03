@@ -27,9 +27,7 @@ def resnet_basic_block(inputs, num_filters, strides=1, name=None):
     )(inputs)
     # We adopt batch normalization right after each convolution and before 
     #   activation. Section 3.4 [1]
-    x = tf.keras.layers.BatchNormalization(
-        epsilon=1e-5, momentum=0.1, name=name + "_1_bn"
-    )(x)
+    x = tf.keras.layers.BatchNormalization(epsilon=1e-5, name=name + "_1_bn")(x)
     x = tf.keras.layers.Activation("relu", name=name + "_1_relu")(x)
 
     x = tf.keras.layers.Conv2D(
@@ -44,9 +42,7 @@ def resnet_basic_block(inputs, num_filters, strides=1, name=None):
     )(x)
     # We adopt batch normalization right after each convolution and before 
     #   activation. Section 3.4 [1]
-    x = tf.keras.layers.BatchNormalization(
-        epsilon=1e-5, momentum=0.1, name=name + "_2_bn"
-    )(x)
+    x = tf.keras.layers.BatchNormalization(epsilon=1e-5, name=name + "_2_bn")(x)
 
     #
     # strides = 1:
@@ -116,9 +112,7 @@ def resnet(input_shape, num_blocks=3, num_classes=10):
     )(inputs)
     # We adopt batch normalization right after each convolution and before 
     # activation. Section 3.4 [1] 
-    x = tf.keras.layers.BatchNormalization(
-        epsilon=1e-5, momentum=0.1, name=name + "_bn"
-    )(x)
+    x = tf.keras.layers.BatchNormalization(epsilon=1e-5, name=name + "_bn")(x)
     x = tf.keras.layers.Activation("relu", name=name + "_relu")(x)
 
     # The numbers of filters are {16, 32, 64} respectively. Section 4.2 [1]

@@ -169,9 +169,6 @@ class DenseNet(torch.nn.Module):
         for m in self.modules():
             if isinstance(m, (torch.nn.Linear, torch.nn.Conv2d)):
                 torch.nn.init.kaiming_normal_(m.weight)
-            elif isinstance(m, (torch.nn.BatchNorm2d, torch.nn.GroupNorm)):
-                torch.nn.init.constant_(m.weight, 1)
-                torch.nn.init.constant_(m.bias, 0)
 
     def _make_layer(self, block, num_blocks, growth_rate, bottleneck):
         layers = []

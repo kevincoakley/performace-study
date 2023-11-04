@@ -12,7 +12,7 @@ class ResNetBasicBlock(torch.nn.Module):
     def __init__(self, in_planes, planes, stride=1):
         super(ResNetBasicBlock, self).__init__()
         # Using the [3x3 , 3x3] x n convention. Section 4.2 [1]
-        # Between stacks, the subsampling is performed by convolutions with 
+        # Between stacks, the subsampling is performed by convolutions with
         #   a stride of 2. Section 4.2 [1]
         self.conv1 = torch.nn.Conv2d(
             in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False
@@ -26,11 +26,11 @@ class ResNetBasicBlock(torch.nn.Module):
 
         #
         # strides = 1:
-        #   The identity shortcuts (Eqn.(1)) can be directly used when the input 
+        #   The identity shortcuts (Eqn.(1)) can be directly used when the input
         #   and output are of the same dimensions (solid line shortcuts in Fig. 3).
         # strides = 2:
-        #   When the dimensions increase (dotted line shortcuts in Fig. 3), we consider 
-        #   two options: ... (B) The projection shortcut in Eqn.(2) is used to match 
+        #   When the dimensions increase (dotted line shortcuts in Fig. 3), we consider
+        #   two options: ... (B) The projection shortcut in Eqn.(2) is used to match
         #   dimensions (done by 1×1 convolutions).
         # Section 3.3 "Residual Network" [1]
         #
@@ -43,8 +43,8 @@ class ResNetBasicBlock(torch.nn.Module):
 
     def forward(self, inputs):
         # Following ResNet building block from Figure 2 [1].
-        # We adopt batch normalization right after each convolution and before 
-        # activation. Section 3.4 [1] 
+        # We adopt batch normalization right after each convolution and before
+        # activation. Section 3.4 [1]
         x = self.conv1(inputs)
         x = self.bn1(x)
         x = self.relu(x)
@@ -53,11 +53,11 @@ class ResNetBasicBlock(torch.nn.Module):
         x = self.bn2(x)
 
         if self.downsample:
-            # The projection shortcut in Eqn.(2) is used to match dimensions 
+            # The projection shortcut in Eqn.(2) is used to match dimensions
             # (done by 1×1 convolutions). Section 3.3 "Residual Network" [1]
             y = self.shortcut(inputs)
         else:
-            # The identity shortcuts (Eqn.(1)) can be directly used when the input 
+            # The identity shortcuts (Eqn.(1)) can be directly used when the input
             # and output are of the same dimensions. Section 3.3 "Residual Network" [1]
             y = inputs
 
@@ -76,7 +76,7 @@ class ResNet(torch.nn.Module):
         # |-----------------|-------|-------|-----|
         # | # layers        | 1+2n  | 2n    | 2n  |
         # | # filters       | 16    | 32    | 64  |
-        # 
+        #
         # n = num_blocks
         #
         # num_blocks = 3: ResNet20
@@ -92,8 +92,8 @@ class ResNet(torch.nn.Module):
         self.conv1 = torch.nn.Conv2d(
             3, 16, kernel_size=3, stride=1, padding=0, bias=False
         )
-        # We adopt batch normalization right after each convolution and before 
-        # activation. Section 3.4 [1] 
+        # We adopt batch normalization right after each convolution and before
+        # activation. Section 3.4 [1]
         self.bn1 = torch.nn.BatchNorm2d(16, eps=1e-5)
         self.relu = torch.nn.ReLU(inplace=True)
 
@@ -113,7 +113,7 @@ class ResNet(torch.nn.Module):
         #   Section 3.3 "Residual Network" [1]
         self.conv4 = self._make_layer(ResNetBasicBlock, 64, num_blocks, first_stride=2)
 
-        # The network ends with a global average pooling, a 10-way fully-connected 
+        # The network ends with a global average pooling, a 10-way fully-connected
         # layer, and softmax. Section 4.2 [1]
         self.avgpool = torch.nn.AdaptiveAvgPool2d((1, 1))
         self.fc = torch.nn.Linear(64, num_classes)
@@ -121,9 +121,6 @@ class ResNet(torch.nn.Module):
         for m in self.modules():
             if isinstance(m, (torch.nn.Linear, torch.nn.Conv2d)):
                 torch.nn.init.kaiming_normal_(m.weight)
-            elif isinstance(m, (torch.nn.BatchNorm2d, torch.nn.GroupNorm)):
-                torch.nn.init.constant_(m.weight, 1)
-                torch.nn.init.constant_(m.bias, 0)
 
     def _make_layer(self, block, planes, num_blocks, first_stride):
         layers = []

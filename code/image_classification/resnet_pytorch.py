@@ -90,7 +90,7 @@ class ResNet(torch.nn.Module):
 
         # The first layer is 3×3 convolutions. Section 4.2 [1]
         self.conv1 = torch.nn.Conv2d(
-            3, 16, kernel_size=3, stride=1, padding=0, bias=False
+            3, 16, kernel_size=3, stride=1, padding=1, bias=False
         )
         # We adopt batch normalization right after each convolution and before
         # activation. Section 3.4 [1]

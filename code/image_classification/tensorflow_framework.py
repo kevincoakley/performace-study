@@ -37,12 +37,7 @@ class Tensorflow:
             tf.config.experimental.enable_op_determinism()
             print("Enabled op determinism")
 
-    def load_dataset(
-        self,
-        model_details,
-        dataset_details,
-        dataset_seed_val,
-    ):
+    def load_dataset(self, model_details, dataset_details):
         batch_size = model_details["batch_size"]
         train_path = dataset_details["train_path"]
         val_path = dataset_details["val_path"]
@@ -96,7 +91,7 @@ class Tensorflow:
         train_dataset = (
             train.map(preprocessing)
             .map(augmentation)
-            .shuffle(1000, seed=dataset_seed_val)
+            .shuffle(1000)
             .batch(batch_size, drop_remainder=False)
             .prefetch(tf.data.AUTOTUNE)
         )

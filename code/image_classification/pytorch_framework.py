@@ -23,16 +23,13 @@ class Pytorch:
         np.random.seed(seed_val)
         torch.use_deterministic_algorithms(True)
 
-    def load_dataset(self, model_details, dataset_details, dataset_seed_val):
+    def load_dataset(self, model_details, dataset_details):
         batch_size = model_details["batch_size"]
         train_path = dataset_details["train_path"]
         val_path = dataset_details["val_path"]
         test_path = dataset_details["test_path"]
         normalization_mean = dataset_details["normalization"]["mean"]
         normalization_std = dataset_details["normalization"]["std"]
-
-        data_generator = torch.Generator()
-        data_generator.manual_seed(dataset_seed_val)
 
         normalize = torchvision.transforms.Normalize(
             mean=normalization_mean, std=normalization_std
@@ -65,7 +62,6 @@ class Pytorch:
             batch_size=batch_size,
             shuffle=True,
             num_workers=4,
-            generator=data_generator,
             pin_memory=True,
         )
 
@@ -74,7 +70,6 @@ class Pytorch:
             batch_size=batch_size,
             shuffle=False,
             num_workers=4,
-            generator=data_generator,
             pin_memory=True,
         )
 
@@ -83,7 +78,6 @@ class Pytorch:
             batch_size=batch_size,
             shuffle=False,
             num_workers=4,
-            generator=data_generator,
             pin_memory=True,
         )
 

@@ -174,7 +174,7 @@ def image_classification(
     """
     # Always use the same random seed for the dataset
     train_dataset, val_dataset, test_dataset = framework.load_dataset(
-        model_details, dataset_details, 42
+        model_details, dataset_details
     )
 
     """

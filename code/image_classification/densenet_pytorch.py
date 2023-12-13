@@ -24,7 +24,7 @@ class DenseNetBasicBlock(torch.nn.Module):
         # to reduce the number of input feature-maps, and thus to improve computational
         # efficiency. Section 3 "Bottleneck layers" [1]
         if self.bottleneck:
-            self.bn_bnk = torch.nn.BatchNorm2d(in_planes, eps=1e-5)
+            self.bn_bnk = torch.nn.BatchNorm2d(in_planes)
             self.relu_bnk = torch.nn.ReLU()
 
             # We let each 1×1 convolution produce 4k (4 * growth_rate) feature-maps.
@@ -41,7 +41,7 @@ class DenseNetBasicBlock(torch.nn.Module):
 
         # For convolutional layers with kernel size 3×3, each side of the inputs is zero-padded by one pixel
         # to keep the feature-map size fixed. Section 3 "Implementation Details" [1]
-        self.bn = torch.nn.BatchNorm2d(post_bottleneck_in_planes, eps=1e-5)
+        self.bn = torch.nn.BatchNorm2d(post_bottleneck_in_planes)
         self.relu = torch.nn.ReLU()
         self.conv2 = torch.nn.Conv2d(
             post_bottleneck_in_planes,
@@ -77,7 +77,7 @@ class DenseNetTransitionBlock(torch.nn.Module):
         # We use 1×1 convolution followed by 2×2 average pooling as transition layers
         # between two contiguous dense blocks. Section 3 "Implementation Details" [1]
         #
-        self.bn1 = torch.nn.BatchNorm2d(in_planes, eps=1e-5)
+        self.bn1 = torch.nn.BatchNorm2d(in_planes)
         self.relu = torch.nn.ReLU()
         self.conv2 = torch.nn.Conv2d(
             in_planes,
@@ -158,7 +158,7 @@ class DenseNet(torch.nn.Module):
 
         # Last transition block before the classifier. Only use BN-ReLU after the last
         # dense block. See addTransition() [2]
-        self.bn1 = torch.nn.BatchNorm2d(self.n_channels, eps=1e-5)
+        self.bn1 = torch.nn.BatchNorm2d(self.n_channels)
         self.relu = torch.nn.ReLU()
 
         # At the end of the last dense block, a global average pooling is performed and

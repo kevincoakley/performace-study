@@ -9,11 +9,10 @@ import tensorflow as tf
 
 
 def resnet_basic_block(inputs, num_filters, strides=1, name=None):
-
-    # Following ResNet building block from Figure 2 [1]. 
+    # Following ResNet building block from Figure 2 [1].
     # Using the [3x3 , 3x3] x n convention. Section 4.2 [1]
 
-    # Between stacks, the subsampling is performed by convolutions with 
+    # Between stacks, the subsampling is performed by convolutions with
     # a stride of 2. Section 4.2 [1]
     x = tf.keras.layers.Conv2D(
         num_filters,
@@ -25,9 +24,9 @@ def resnet_basic_block(inputs, num_filters, strides=1, name=None):
         kernel_regularizer=tf.keras.regularizers.l2(1e-4),
         name=name + "_1_conv2d",
     )(inputs)
-    # We adopt batch normalization right after each convolution and before 
+    # We adopt batch normalization right after each convolution and before
     #   activation. Section 3.4 [1]
-    x = tf.keras.layers.BatchNormalization(epsilon=1e-5, name=name + "_1_bn")(x)
+    x = tf.keras.layers.BatchNormalization(name=name + "_1_bn")(x)
     x = tf.keras.layers.Activation("relu", name=name + "_1_relu")(x)
 
     x = tf.keras.layers.Conv2D(
@@ -40,22 +39,22 @@ def resnet_basic_block(inputs, num_filters, strides=1, name=None):
         kernel_regularizer=tf.keras.regularizers.l2(1e-4),
         name=name + "_2_conv2d",
     )(x)
-    # We adopt batch normalization right after each convolution and before 
+    # We adopt batch normalization right after each convolution and before
     #   activation. Section 3.4 [1]
-    x = tf.keras.layers.BatchNormalization(epsilon=1e-5, name=name + "_2_bn")(x)
+    x = tf.keras.layers.BatchNormalization(name=name + "_2_bn")(x)
 
     #
     # strides = 1:
-    #   The identity shortcuts (Eqn.(1)) can be directly used when the input 
+    #   The identity shortcuts (Eqn.(1)) can be directly used when the input
     #   and output are of the same dimensions (solid line shortcuts in Fig. 3).
     # strides = 2:
-    #   When the dimensions increase (dotted line shortcuts in Fig. 3), we consider 
-    #   two options: ... (B) The projection shortcut in Eqn.(2) is used to match 
+    #   When the dimensions increase (dotted line shortcuts in Fig. 3), we consider
+    #   two options: ... (B) The projection shortcut in Eqn.(2) is used to match
     #   dimensions (done by 1×1 convolutions).
     # Section 3.3 "Residual Network" [1]
     #
     if strides != 1:
-        # The projection shortcut in Eqn.(2) is used to match dimensions 
+        # The projection shortcut in Eqn.(2) is used to match dimensions
         # (done by 1×1 convolutions). Section 3.3 "Residual Network" [1]
         y = tf.keras.layers.Conv2D(
             num_filters,
@@ -68,7 +67,7 @@ def resnet_basic_block(inputs, num_filters, strides=1, name=None):
             name=name + "_0_conv2d",
         )(inputs)
     else:
-        # The identity shortcuts (Eqn.(1)) can be directly used when the input 
+        # The identity shortcuts (Eqn.(1)) can be directly used when the input
         # and output are of the same dimensions. Section 3.3 "Residual Network" [1]
         y = inputs
 
@@ -85,7 +84,7 @@ def resnet(input_shape, num_blocks=3, num_classes=10):
     # |-----------------|-------|-------|-----|
     # | # layers        | 1+2n  | 2n    | 2n  |
     # | # filters       | 16    | 32    | 64  |
-    # 
+    #
     # n = num_blocks
     #
     # num_blocks = 3: ResNet20
@@ -110,9 +109,9 @@ def resnet(input_shape, num_blocks=3, num_classes=10):
         kernel_regularizer=tf.keras.regularizers.l2(1e-4),
         name=name + "_conv2d",
     )(inputs)
-    # We adopt batch normalization right after each convolution and before 
-    # activation. Section 3.4 [1] 
-    x = tf.keras.layers.BatchNormalization(epsilon=1e-5, name=name + "_bn")(x)
+    # We adopt batch normalization right after each convolution and before
+    # activation. Section 3.4 [1]
+    x = tf.keras.layers.BatchNormalization(name=name + "_bn")(x)
     x = tf.keras.layers.Activation("relu", name=name + "_relu")(x)
 
     # The numbers of filters are {16, 32, 64} respectively. Section 4.2 [1]
@@ -151,7 +150,7 @@ def resnet(input_shape, num_blocks=3, num_classes=10):
             inputs=x, num_filters=64, strides=1, name=name + "_block" + str(blocks + 2)
         )
 
-    # The network ends with a global average pooling, a 10-way fully-connected 
+    # The network ends with a global average pooling, a 10-way fully-connected
     # layer, and softmax. Section 4.2 [1]
     x = tf.keras.layers.GlobalAveragePooling2D()(x)
     outputs = tf.keras.layers.Dense(

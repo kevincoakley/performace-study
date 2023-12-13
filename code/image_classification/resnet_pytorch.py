@@ -17,12 +17,12 @@ class ResNetBasicBlock(torch.nn.Module):
         self.conv1 = torch.nn.Conv2d(
             in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False
         )
-        self.bn1 = torch.nn.BatchNorm2d(planes, eps=1e-5)
+        self.bn1 = torch.nn.BatchNorm2d(planes)
         self.relu = torch.nn.ReLU()
         self.conv2 = torch.nn.Conv2d(
             planes, planes, kernel_size=3, stride=1, padding=1, bias=False
         )
-        self.bn2 = torch.nn.BatchNorm2d(planes, eps=1e-5)
+        self.bn2 = torch.nn.BatchNorm2d(planes)
 
         #
         # strides = 1:
@@ -94,7 +94,7 @@ class ResNet(torch.nn.Module):
         )
         # We adopt batch normalization right after each convolution and before
         # activation. Section 3.4 [1]
-        self.bn1 = torch.nn.BatchNorm2d(16, eps=1e-5)
+        self.bn1 = torch.nn.BatchNorm2d(16)
         self.relu = torch.nn.ReLU()
 
         # The numbers of filters are {16, 32, 64} respectively. Section 4.2 [1]

@@ -18,7 +18,7 @@ def densenet_basic_block(inputs, growth_rate, bottleneck, name=None):
     # to reduce the number of input feature-maps, and thus to improve computational
     # efficiency. Section 3 "Bottleneck layers" [1]
     if bottleneck:
-        x = tf.keras.layers.BatchNormalization(epsilon=1e-5, name=name + "_0_bn")(x)
+        x = tf.keras.layers.BatchNormalization(name=name + "_0_bn")(x)
         x = tf.keras.layers.Activation("relu", name=name + "_0_relu")(x)
         # We let each 1×1 convolution produce 4k (4 * growth_rate) feature-maps.
         # Section 3 "Bottleneck layers" [1]
@@ -35,7 +35,7 @@ def densenet_basic_block(inputs, growth_rate, bottleneck, name=None):
 
     # For convolutional layers with kernel size 3×3, each side of the inputs is zero-padded by one pixel
     # to keep the feature-map size fixed. Section 3 "Implementation Details" [1]
-    x = tf.keras.layers.BatchNormalization(epsilon=1e-5, name=name + "_1_bn")(x)
+    x = tf.keras.layers.BatchNormalization(name=name + "_1_bn")(x)
     x = tf.keras.layers.Activation("relu", name=name + "_1_relu")(x)
     x = tf.keras.layers.Conv2D(
         growth_rate,
@@ -58,7 +58,7 @@ def densenet_transition_block(inputs, n_channels, compression_reduction, name=No
     # We use 1×1 convolution followed by 2×2 average pooling as transition layers
     # between two contiguous dense blocks. Section 3 "Implementation Details" [1]
     #
-    x = tf.keras.layers.BatchNormalization(epsilon=1e-5, name=name + "_bn")(inputs)
+    x = tf.keras.layers.BatchNormalization(name=name + "_bn")(inputs)
     x = tf.keras.layers.Activation("relu", name=name + "_relu")(x)
     x = tf.keras.layers.Conv2D(
         int(n_channels * compression_reduction),
@@ -164,7 +164,7 @@ def densenet(
 
     # Last transition block before the classifier. Only use BN-ReLU after the last
     # dense block. See addTransition() [2]
-    x = tf.keras.layers.BatchNormalization(epsilon=1e-5, name="bn")(x)
+    x = tf.keras.layers.BatchNormalization(name="bn")(x)
     x = tf.keras.layers.Activation("relu", name="relu")(x)
 
     # At the end of the last dense block, a global average pooling is performed and
